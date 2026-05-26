@@ -1,0 +1,6 @@
+prune tests
+prune reports
+prune docs/probes
+prune .pytest_cache
+prune mco.egg-info
+recursive-exclude * __pycache__ *.py[cod] .DS_Store
