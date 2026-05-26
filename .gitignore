@@ -1,0 +1,23 @@
+# macOS
+.DS_Store
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+build/
+dist/
+*.egg-info/
+.venv-build/
+.pytest_cache/
+
+# Local runtime state
+.mco/
+
+# Temp artifacts
+*.tmp
+
+# Generated reports and capability probes
+reports/
+docs/probes/

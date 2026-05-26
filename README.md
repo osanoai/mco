@@ -4,16 +4,6 @@
   <img src="https://raw.githubusercontent.com/osanoai/mco/main/docs/assets/logos/mco-logo-readme.svg" alt="MCO Logo" width="520" />
 </p>
 
-<p align="center">
-  <a href="https://www.npmjs.com/package/@osanoai/mco"><img src="https://img.shields.io/npm/v/@osanoai/mco?style=flat-square&color=cb3837&logo=npm&logoColor=white" alt="npm version" /></a>
-  <a href="https://www.npmjs.com/package/@osanoai/mco"><img src="https://img.shields.io/npm/dm/@osanoai/mco?style=flat-square&color=cb3837" alt="npm downloads" /></a>
-  <a href="https://github.com/osanoai/mco/stargazers"><img src="https://img.shields.io/github/stars/osanoai/mco?style=flat-square&color=f59e0b" alt="GitHub stars" /></a>
-  <a href="./LICENSE"><img src="https://img.shields.io/badge/License-MIT-22c55e?style=flat-square" alt="License: MIT" /></a>
-  <img src="https://img.shields.io/badge/Python-3.10%2B-3776AB?style=flat-square&logo=python&logoColor=white" alt="Python 3.10+" />
-  <img src="https://img.shields.io/badge/Providers-5%20built--in-7c3aed?style=flat-square" alt="5 built-in providers" />
-  <a href="https://pypi.org/project/evermemos-mcp/"><img src="https://img.shields.io/badge/evermemos--mcp-memory%20powered-6366f1?style=flat-square" alt="evermemos-mcp" /></a>
-</p>
-
 <p align="center"><strong>MCO — Orchestrate AI Coding Agents. Any Prompt. Any Agent. Any IDE.</strong></p>
 
 <p align="center"><strong>MCO equips your primary agent with an agent team: dispatch Claude, Codex, Gemini, OpenCode, and Qwen in parallel to execute tasks, review outputs, and synthesize consensus.</strong></p>
