@@ -121,7 +121,7 @@ class AdapterContractTests(unittest.TestCase):
                 },
             )
             cmd = adapter._build_command(task)  # type: ignore[attr-defined]
-        self.assertEqual(cmd[0], "agent")
+        self.assertEqual(cmd[0], "cursor-agent")
         self.assertIn("--print", cmd)
         self.assertIn("--trust", cmd)
         self.assertIn("--workspace", cmd)

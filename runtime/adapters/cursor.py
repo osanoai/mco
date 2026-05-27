@@ -11,7 +11,7 @@ class CursorAdapter(ShimAdapterBase):
     def __init__(self) -> None:
         super().__init__(
             provider_id="cursor",
-            binary_name="agent",
+            binary_name="cursor-agent",
             capability_set=CapabilitySet(
                 tiers=["C0", "C1", "C2", "C3", "C4"],
                 supports_native_async=False,
@@ -41,7 +41,7 @@ class CursorAdapter(ShimAdapterBase):
         raw_permissions = input_task.metadata.get("provider_permissions")
         permissions = raw_permissions if isinstance(raw_permissions, dict) else {}
 
-        cmd = ["agent", "--print", "--output-format", "text"]
+        cmd = ["cursor-agent", "--print", "--output-format", "text"]
 
         mode = permissions.get("mode")
         if isinstance(mode, str) and mode.strip():
@@ -71,7 +71,7 @@ class CursorAdapter(ShimAdapterBase):
 
     def _build_command_for_record(self) -> List[str]:
         return [
-            "agent",
+            "cursor-agent",
             "--print",
             "--output-format",
             "text",

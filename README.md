@@ -29,7 +29,7 @@
     <td align="center"><code>claude</code></td>
     <td align="center"><code>gemini</code></td>
     <td align="center"><code>codex</code></td>
-    <td align="center"><code>cursor</code></td>
+    <td align="center"><code>cursor-agent</code></td>
     <td align="center"><code>opencode</code></td>
     <td align="center"><code>qwen</code></td>
   </tr>
@@ -140,7 +140,7 @@ The question isn't "which AI agent is best" — it's "why limit yourself to one?
 |----------|-----|--------|
 | Claude Code | `claude` | Supported |
 | Codex CLI | `codex` | Supported |
-| Cursor CLI | `cursor` | Supported |
+| Cursor CLI | `cursor-agent` | Supported |
 | Gemini CLI | `gemini` | Supported |
 | OpenCode | `opencode` | Supported |
 | Qwen Code | `qwen` | Supported |

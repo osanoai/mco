@@ -16,7 +16,7 @@ This document freezes provider permission-key behavior for `mco run` / `mco revi
 |---|---|---|---|
 | `claude` | `["permission_mode"]` | `permission_mode` -> `claude --permission-mode <value>` | `permission_mode=plan` |
 | `codex` | `["sandbox"]` | `sandbox` -> `codex exec --sandbox <value>` | `sandbox=workspace-write` |
-| `cursor` | `["approve_mcps", "force", "mode", "sandbox", "trust"]` | `mode` -> `agent --mode <value>`; `sandbox` -> `agent --sandbox <value>`; truthy `force` -> `agent --force`; truthy `approve_mcps` -> `agent --approve-mcps`; `trust=false` omits default `agent --trust` | `agent --print --output-format text --trust --workspace <repo>` |
+| `cursor` | `["approve_mcps", "force", "mode", "sandbox", "trust"]` | `mode` -> `cursor-agent --mode <value>`; `sandbox` -> `cursor-agent --sandbox <value>`; truthy `force` -> `cursor-agent --force`; truthy `approve_mcps` -> `cursor-agent --approve-mcps`; `trust=false` omits default `cursor-agent --trust` | `cursor-agent --print --output-format text --trust --workspace <repo>` |
 | `gemini` | `[]` | No permission-key mapping in adapter | N/A |
 | `opencode` | `[]` | No permission-key mapping in adapter | N/A |
 | `qwen` | `[]` | No permission-key mapping in adapter | N/A |
