@@ -43,7 +43,7 @@ class ReviewPolicy:
 
 @dataclass(frozen=True)
 class ReviewConfig:
-    providers: List[str] = field(default_factory=lambda: ["claude", "codex", "gemini", "opencode", "qwen"])
+    providers: List[str] = field(default_factory=lambda: ["claude", "codex", "cursor", "gemini", "opencode", "qwen"])
     artifact_base: str = "reports/review"
     policy: ReviewPolicy = field(default_factory=ReviewPolicy)
 

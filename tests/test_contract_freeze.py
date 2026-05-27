@@ -3,7 +3,7 @@ from __future__ import annotations
 import unittest
 from dataclasses import fields
 
-from runtime.adapters import ClaudeAdapter, CodexAdapter, GeminiAdapter, OpenCodeAdapter, QwenAdapter
+from runtime.adapters import ClaudeAdapter, CodexAdapter, CursorAdapter, GeminiAdapter, OpenCodeAdapter, QwenAdapter
 from runtime.artifacts import ARTIFACT_LAYOUT_VERSION, ROOT_DIRS, ROOT_FILES, expected_paths
 from runtime.contracts import CAPABILITY_TIERS, PROVIDER_IDS, ProviderAdapter
 from runtime.types import RUN_RESULT_FIELDS, RUN_RESULT_SCHEMA_VERSION, RunResult
@@ -11,7 +11,7 @@ from runtime.types import RUN_RESULT_FIELDS, RUN_RESULT_SCHEMA_VERSION, RunResul
 
 class ContractFreezeTests(unittest.TestCase):
     def test_provider_and_capability_sets_are_frozen(self) -> None:
-        self.assertEqual(tuple(PROVIDER_IDS), ("claude", "codex", "gemini", "opencode", "qwen"))
+        self.assertEqual(tuple(PROVIDER_IDS), ("claude", "codex", "cursor", "gemini", "opencode", "qwen"))
         self.assertEqual(tuple(CAPABILITY_TIERS), ("C0", "C1", "C2", "C3", "C4", "C5", "C6"))
 
     def test_provider_adapter_protocol_shape(self) -> None:
@@ -36,6 +36,10 @@ class ContractFreezeTests(unittest.TestCase):
     def test_provider_permission_key_matrix_contract(self) -> None:
         self.assertEqual(ClaudeAdapter().supported_permission_keys(), ["permission_mode"])
         self.assertEqual(CodexAdapter().supported_permission_keys(), ["sandbox"])
+        self.assertEqual(
+            CursorAdapter().supported_permission_keys(),
+            ["approve_mcps", "force", "mode", "sandbox", "trust"],
+        )
         self.assertEqual(GeminiAdapter().supported_permission_keys(), [])
         self.assertEqual(OpenCodeAdapter().supported_permission_keys(), [])
         self.assertEqual(QwenAdapter().supported_permission_keys(), [])

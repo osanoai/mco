@@ -7,7 +7,7 @@ import unittest
 
 from unittest.mock import patch
 
-from runtime.adapters import ClaudeAdapter, CodexAdapter, GeminiAdapter, OpenCodeAdapter, QwenAdapter
+from runtime.adapters import ClaudeAdapter, CodexAdapter, CursorAdapter, GeminiAdapter, OpenCodeAdapter, QwenAdapter
 from runtime.adapters.shim import _sanitize_env
 from runtime.contracts import NormalizeContext, TaskInput
 
@@ -101,6 +101,49 @@ class AdapterContractTests(unittest.TestCase):
             cmd = adapter._build_command(task)  # type: ignore[attr-defined]
             self.assertIn("--output-schema", cmd)
             self.assertIn("/tmp/review.schema.json", cmd)
+
+    def test_cursor_adapter_builds_headless_agent_command(self) -> None:
+        adapter = CursorAdapter()
+        with tempfile.TemporaryDirectory() as tmpdir:
+            task = TaskInput(
+                task_id="task-cursor-command",
+                prompt="review",
+                repo_root=tmpdir,
+                target_paths=["."],
+                metadata={
+                    "provider_models": {"cursor": "gpt-5"},
+                    "provider_permissions": {
+                        "approve_mcps": "true",
+                        "force": "true",
+                        "mode": "plan",
+                        "sandbox": "disabled",
+                    },
+                },
+            )
+            cmd = adapter._build_command(task)  # type: ignore[attr-defined]
+        self.assertEqual(cmd[0], "agent")
+        self.assertIn("--print", cmd)
+        self.assertIn("--trust", cmd)
+        self.assertIn("--workspace", cmd)
+        self.assertIn(tmpdir, cmd)
+        self.assertIn("--approve-mcps", cmd)
+        self.assertIn("--force", cmd)
+        self.assertEqual(cmd[cmd.index("--mode") + 1], "plan")
+        self.assertEqual(cmd[cmd.index("--sandbox") + 1], "disabled")
+        self.assertEqual(cmd[cmd.index("--model") + 1], "gpt-5")
+
+    def test_cursor_adapter_can_omit_trust(self) -> None:
+        adapter = CursorAdapter()
+        with tempfile.TemporaryDirectory() as tmpdir:
+            task = TaskInput(
+                task_id="task-cursor-no-trust",
+                prompt="review",
+                repo_root=tmpdir,
+                target_paths=["."],
+                metadata={"provider_permissions": {"trust": "false"}},
+            )
+            cmd = adapter._build_command(task)  # type: ignore[attr-defined]
+        self.assertNotIn("--trust", cmd)
 
     def test_adapter_cancel(self) -> None:
         adapter = ClaudeAdapter()

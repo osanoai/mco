@@ -20,6 +20,7 @@ from runtime.model_catalog import (
 from runtime.contracts import TaskInput
 from runtime.adapters.claude import ClaudeAdapter
 from runtime.adapters.codex import CodexAdapter
+from runtime.adapters.cursor import CursorAdapter
 from runtime.adapters.gemini import GeminiAdapter
 from runtime.adapters.opencode import OpenCodeAdapter
 from runtime.adapters.qwen import QwenAdapter
@@ -220,6 +221,20 @@ class TestAdapterModelInjection:
         cmd = adapter._build_command(self._task())
         assert "-c" not in cmd
 
+    # ── Cursor ──
+
+    def test_cursor_with_model(self):
+        adapter = CursorAdapter()
+        cmd = adapter._build_command(self._task({"cursor": "gpt-5"}))
+        assert "--model" in cmd
+        idx = cmd.index("--model")
+        assert cmd[idx + 1] == "gpt-5"
+
+    def test_cursor_without_model(self):
+        adapter = CursorAdapter()
+        cmd = adapter._build_command(self._task())
+        assert "--model" not in cmd
+
     # ── Gemini ──
 
     def test_gemini_with_model(self):
@@ -256,11 +271,18 @@ class TestAdapterModelInjection:
         assert "-m" in cmd
         idx = cmd.index("-m")
         assert cmd[idx + 1] == "qwen2.5-coder-32b"
+        assert "--auth-type" not in cmd
 
     def test_qwen_without_model(self):
         adapter = QwenAdapter()
         cmd = adapter._build_command(self._task())
         assert "-m" not in cmd
+        assert "--auth-type" not in cmd
+
+    def test_qwen_auth_probe_uses_configured_auth(self):
+        adapter = QwenAdapter()
+        cmd = adapter._auth_check_command("qwen")
+        assert cmd == ["qwen", "Reply with exactly OK", "--output-format", "text"]
 
     # ── Cross-provider ──
 

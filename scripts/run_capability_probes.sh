@@ -176,14 +176,14 @@ run_probe "claude" "C0" "'$CLAUDE_BIN' auth status" ""
 run_probe "codex" "C0" "'$CODEX_BIN' login status" ""
 run_probe "gemini" "C0" "'$GEMINI_BIN' -p 'Reply with exactly OK'" "rg -q '(^|[^A-Za-z])OK([^A-Za-z]|$)' '$BASE_DIR/gemini/C0/raw/stdout.log'"
 run_probe "opencode" "C0" "'$OPENCODE_BIN' auth list" ""
-run_probe "qwen" "C0" "'$QWEN_BIN' 'Reply with exactly OK' --output-format text --auth-type qwen-oauth" ""
+run_probe "qwen" "C0" "'$QWEN_BIN' 'Reply with exactly OK' --output-format text" ""
 
 # C1 probes
 run_probe "claude" "C1" "'$CLAUDE_BIN' -p --permission-mode plan --output-format text 'Reply with exactly OK'" ""
 run_probe "codex" "C1" "'$CODEX_BIN' exec --skip-git-repo-check -C '$PROBE_CWD' --sandbox workspace-write 'Reply with exactly OK' || true" "rg -q '(^|[^A-Za-z])OK([^A-Za-z]|$)' '$BASE_DIR/codex/C1/raw/stdout.log'"
 run_probe "gemini" "C1" "'$GEMINI_BIN' -p 'Reply with exactly OK'" "rg -q '(^|[^A-Za-z])OK([^A-Za-z]|$)' '$BASE_DIR/gemini/C1/raw/stdout.log'"
 run_probe "opencode" "C1" "'$OPENCODE_BIN' run 'Reply with exactly OK' --format default" "(! rg -q '(^|\\s)Error:' '$BASE_DIR/opencode/C1/raw/stdout.log') && (! rg -q '(^|\\s)Error:' '$BASE_DIR/opencode/C1/raw/stderr.log')"
-run_probe "qwen" "C1" "'$QWEN_BIN' 'Reply with exactly OK' --output-format text --auth-type qwen-oauth" ""
+run_probe "qwen" "C1" "'$QWEN_BIN' 'Reply with exactly OK' --output-format text" ""
 
 # C2 probes
 run_probe "claude" "C2" \
@@ -204,12 +204,12 @@ run_probe "opencode" "C2" \
   "jq -s -e '([ .[] | .. | objects | select(.probe?==\"c2\" and .ok?==true)] | length > 0) or ([ .[] | .. | strings | select(test(\"\\\"probe\\\"\\\\s*:\\\\s*\\\"c2\\\"\") and test(\"\\\"ok\\\"\\\\s*:\\\\s*true\")) ] | length > 0)' '$BASE_DIR/opencode/C2/raw/stdout.log'"
 
 run_probe "qwen" "C2" \
-  "'$QWEN_BIN' 'Return JSON object {\"probe\":\"c2\",\"ok\":true}' --output-format json --auth-type qwen-oauth" \
+  "'$QWEN_BIN' 'Return JSON object {\"probe\":\"c2\",\"ok\":true}' --output-format json" \
   "jq -e '([.. | objects | select(has(\"probe\") and has(\"ok\")) | select(.probe==\"c2\" and .ok==true)] | length > 0) or ([.. | strings | select(contains(\"{\\\"probe\\\":\\\"c2\\\",\\\"ok\\\":true}\"))] | length > 0)' '$BASE_DIR/qwen/C2/raw/stdout.log'"
 
 # C3 sample probe for Qwen (stream-json)
 run_probe "qwen" "C3" \
-  "'$QWEN_BIN' 'Output two short thoughts.' --output-format stream-json --auth-type qwen-oauth" \
+  "'$QWEN_BIN' 'Output two short thoughts.' --output-format stream-json" \
   "jq -s -e 'length >= 2' '$BASE_DIR/qwen/C3/raw/stdout.log'"
 
 LOCK_FILE="$BASE_DIR/lock-summary.yaml"

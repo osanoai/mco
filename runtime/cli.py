@@ -20,7 +20,7 @@ from .formatters import (
 from .model_catalog import load_catalog, list_models_for_provider, list_providers, parse_provider_models, resolve_model
 from .review_engine import ReviewRequest, run_review
 
-SUPPORTED_PROVIDERS = ("claude", "codex", "gemini", "opencode", "qwen")
+SUPPORTED_PROVIDERS = ("claude", "codex", "cursor", "gemini", "opencode", "qwen")
 DEFAULT_CONFIG = ReviewConfig()
 DEFAULT_POLICY = DEFAULT_CONFIG.policy
 
@@ -620,7 +620,7 @@ def _add_common_execution_args(parser: argparse.ArgumentParser) -> None:
     scope.add_argument(
         "--providers",
         default=argparse.SUPPRESS,
-        help="Comma-separated providers (default from config or: claude,codex,gemini,opencode,qwen)",
+        help="Comma-separated providers (default from config or: claude,codex,cursor,gemini,opencode,qwen)",
     )
     scope.add_argument("--target-paths", default=".", help="Comma-separated task scope paths")
     scope.add_argument("--task-id", default="", help="Optional stable task id")
@@ -821,7 +821,7 @@ def build_parser() -> argparse.ArgumentParser:
     doctor.add_argument(
         "--providers",
         default=",".join(DEFAULT_CONFIG.providers),
-        help="Comma-separated providers. Supported: claude,codex,gemini,opencode,qwen",
+        help="Comma-separated providers. Supported: claude,codex,cursor,gemini,opencode,qwen",
     )
     doctor.add_argument("--json", action="store_true", help="Print machine-readable JSON output")
 

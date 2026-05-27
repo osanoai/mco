@@ -6,13 +6,14 @@
 
 <p align="center"><strong>MCO — Orchestrate AI Coding Agents. Any Prompt. Any Agent. Any IDE.</strong></p>
 
-<p align="center"><strong>MCO equips your primary agent with an agent team: dispatch Claude, Codex, Gemini, OpenCode, and Qwen in parallel to execute tasks, review outputs, and synthesize consensus.</strong></p>
+<p align="center"><strong>MCO equips your primary agent with an agent team: dispatch Claude, Codex, Cursor, Gemini, OpenCode, and Qwen in parallel to execute tasks, review outputs, and synthesize consensus.</strong></p>
 
 <table align="center">
   <tr>
     <td align="center"><a href="https://github.com/anthropics/claude-code"><img src="https://github.com/anthropics.png?size=96" alt="Claude Code" width="48" /></a></td>
     <td align="center"><a href="https://github.com/google-gemini/gemini-cli"><img src="https://github.com/google-gemini.png?size=96" alt="Gemini CLI" width="48" /></a></td>
     <td align="center"><a href="https://github.com/openai/codex"><img src="https://github.com/openai.png?size=96" alt="Codex CLI" width="48" /></a></td>
+    <td align="center"><a href="https://www.cursor.com"><strong>Cursor</strong></a></td>
     <td align="center"><a href="https://github.com/sst/opencode"><img src="https://raw.githubusercontent.com/sst/opencode/master/packages/console/app/src/asset/brand/opencode-logo-light-square.svg" alt="OpenCode" width="48" /></a></td>
     <td align="center"><a href="https://github.com/QwenLM/qwen-code"><img src="https://github.com/QwenLM.png?size=96" alt="Qwen Code" width="48" /></a></td>
   </tr>
@@ -20,6 +21,7 @@
     <td align="center"><strong>Claude Code</strong></td>
     <td align="center"><strong>Gemini CLI</strong></td>
     <td align="center"><strong>Codex CLI</strong></td>
+    <td align="center"><strong>Cursor CLI</strong></td>
     <td align="center"><strong>OpenCode</strong></td>
     <td align="center"><strong>Qwen Code</strong></td>
   </tr>
@@ -27,6 +29,7 @@
     <td align="center"><code>claude</code></td>
     <td align="center"><code>gemini</code></td>
     <td align="center"><code>codex</code></td>
+    <td align="center"><code>cursor</code></td>
     <td align="center"><code>opencode</code></td>
     <td align="center"><code>qwen</code></td>
   </tr>
@@ -36,7 +39,7 @@
 >
 > Work like a Tech Lead: assign one task to multiple agents, run in parallel, and compare outcomes before acting.
 >
-> One command. Five agents working at once.
+> One command. Six agents working at once.
 
 ### Works with OpenClaw
 
@@ -44,7 +47,7 @@ Running [OpenClaw](https://github.com/open-claw/open-claw) on your machine? It c
 
 > "Use mco to run a security review on this repo with Claude, Codex, and Gemini. Synthesize the results."
 
-OpenClaw reads `mco -h`, learns the CLI, and orchestrates the entire workflow autonomously. Your local machine becomes a multi-agent review team — OpenClaw is the manager, MCO is the dispatcher, and Claude/Codex/Gemini/OpenCode/Qwen are the team members.
+OpenClaw reads `mco -h`, learns the CLI, and orchestrates the entire workflow autonomously. Your local machine becomes a multi-agent review team — OpenClaw is the manager, MCO is the dispatcher, and Claude/Codex/Cursor/Gemini/OpenCode/Qwen are the team members.
 
 This works the same way from **Claude Code, Cursor, Trae, Copilot, Windsurf**, or any agent that can run shell commands.
 
@@ -137,6 +140,7 @@ The question isn't "which AI agent is best" — it's "why limit yourself to one?
 |----------|-----|--------|
 | Claude Code | `claude` | Supported |
 | Codex CLI | `codex` | Supported |
+| Cursor CLI | `cursor` | Supported |
 | Gemini CLI | `gemini` | Supported |
 | OpenCode | `opencode` | Supported |
 | Qwen Code | `qwen` | Supported |
@@ -245,7 +249,7 @@ Structured code review with findings schema. Each provider returns normalized fi
 mco review \
   --repo . \
   --prompt "Review for security vulnerabilities and performance issues." \
-  --providers claude,codex,gemini,opencode,qwen \
+  --providers claude,codex,cursor,gemini,opencode,qwen \
   --json
 ```
 
@@ -463,7 +467,7 @@ How it works:
 - `transport: shim` registers a command-based shim provider
 - `model: ...` registers an Ollama-backed provider automatically
 
-This means local Ollama models can participate in the same `mco review` / `mco run` workflows as Claude, Codex, Gemini, OpenCode, and Qwen.
+This means local Ollama models can participate in the same `mco review` / `mco run` workflows as Claude, Codex, Cursor, Gemini, OpenCode, and Qwen.
 
 ## Exit Codes
 

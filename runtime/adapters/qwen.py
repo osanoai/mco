@@ -24,7 +24,7 @@ class QwenAdapter(ShimAdapterBase):
         )
 
     def _auth_check_command(self, binary: str) -> List[str]:
-        return [binary, "Reply with exactly OK", "--output-format", "text", "--auth-type", "qwen-oauth"]
+        return [binary, "Reply with exactly OK", "--output-format", "text"]
 
     def _build_command(self, input_task: TaskInput) -> List[str]:
         cmd = ["qwen"]
@@ -32,13 +32,12 @@ class QwenAdapter(ShimAdapterBase):
         model = provider_models.get("qwen")
         if model:
             cmd.extend(["-m", model])
-        cmd.extend([input_task.prompt, "--output-format", "json", "--auth-type", "qwen-oauth", "-y"])
+        cmd.extend([input_task.prompt, "--output-format", "json", "-y"])
         return cmd
 
     def _build_command_for_record(self) -> List[str]:
-        return ["qwen", "-m", "<model>", "<prompt>", "--output-format", "json", "--auth-type", "qwen-oauth", "-y"]
+        return ["qwen", "-m", "<model>", "<prompt>", "--output-format", "json", "-y"]
 
     def normalize(self, raw: Any, ctx: NormalizeContext) -> List[NormalizedFinding]:
         text = raw if isinstance(raw, str) else ""
         return normalize_findings_from_text(text, ctx, "qwen")
-

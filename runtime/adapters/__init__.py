@@ -5,6 +5,7 @@ from typing import Any, Dict, List, Mapping, Optional
 
 from .claude import ClaudeAdapter
 from .codex import CodexAdapter
+from .cursor import CursorAdapter
 from .custom import CommandShimAdapter
 from .gemini import GeminiAdapter
 from .ollama import OllamaAdapter
@@ -109,6 +110,7 @@ def adapter_registry(
         shim_fallbacks = {
             "claude": ClaudeAdapter,
             "codex": CodexAdapter,
+            "cursor": CursorAdapter,
             "gemini": GeminiAdapter,
             "opencode": OpenCodeAdapter,
             "qwen": QwenAdapter,
@@ -122,6 +124,7 @@ def adapter_registry(
     registry = {
         "claude": ClaudeAdapter(),
         "codex": CodexAdapter(),
+        "cursor": CursorAdapter(),
         "gemini": GeminiAdapter(),
         "opencode": OpenCodeAdapter(),
         "qwen": QwenAdapter(),
@@ -150,6 +153,7 @@ def adapter_registry(
 __all__ = [
     "ClaudeAdapter",
     "CodexAdapter",
+    "CursorAdapter",
     "CommandShimAdapter",
     "GeminiAdapter",
     "OllamaAdapter",
