@@ -22,6 +22,7 @@ from runtime.adapters.claude import ClaudeAdapter
 from runtime.adapters.codex import CodexAdapter
 from runtime.adapters.cursor import CursorAdapter
 from runtime.adapters.gemini import GeminiAdapter
+from runtime.adapters.grok import GrokAdapter
 from runtime.adapters.opencode import OpenCodeAdapter
 from runtime.adapters.qwen import QwenAdapter
 
@@ -43,6 +44,14 @@ _SAMPLE_CATALOG = {
                 {"tier": "fast", "models": ["gpt-5.1-codex-mini"]},
                 {"tier": "balanced", "models": ["gpt-5.2-codex"]},
                 {"tier": "powerful", "models": ["gpt-5.4"]},
+            ],
+        },
+        "grok": {
+            "cli": "grok",
+            "tiers": [
+                {"tier": "fast", "models": ["grok-build"]},
+                {"tier": "balanced", "models": ["grok-build"]},
+                {"tier": "powerful", "models": ["grok-build"]},
             ],
         },
     },
@@ -105,7 +114,7 @@ class TestResolveModel:
 
 class TestListModels:
     def test_list_providers(self):
-        assert list_providers(catalog=_SAMPLE_CATALOG) == ["claude", "codex"]
+        assert list_providers(catalog=_SAMPLE_CATALOG) == ["claude", "codex", "grok"]
 
     def test_list_models_for_provider(self):
         tiers = list_models_for_provider("claude", catalog=_SAMPLE_CATALOG)
@@ -248,6 +257,20 @@ class TestAdapterModelInjection:
         adapter = GeminiAdapter()
         cmd = adapter._build_command(self._task())
         assert "-m" not in cmd
+
+    # ── Grok ──
+
+    def test_grok_with_model(self):
+        adapter = GrokAdapter()
+        cmd = adapter._build_command(self._task({"grok": "grok-build"}))
+        assert "--model" in cmd
+        idx = cmd.index("--model")
+        assert cmd[idx + 1] == "grok-build"
+
+    def test_grok_without_model(self):
+        adapter = GrokAdapter()
+        cmd = adapter._build_command(self._task())
+        assert "--model" not in cmd
 
     # ── OpenCode ──
 

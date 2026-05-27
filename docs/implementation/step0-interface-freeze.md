@@ -20,7 +20,7 @@ Required methods:
 - `normalize(raw: Any, ctx: NormalizeContext) -> list[NormalizedFinding]`
 
 Frozen enums/sets:
-- `ProviderId`: `claude|codex|cursor|gemini|opencode|qwen`
+- `ProviderId`: `claude|codex|cursor|gemini|grok|opencode|qwen`
 - `CapabilityTier`: `C0..C6`
 
 ## 2) RunResult Contract (Frozen)

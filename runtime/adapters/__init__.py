@@ -8,6 +8,7 @@ from .codex import CodexAdapter
 from .cursor import CursorAdapter
 from .custom import CommandShimAdapter
 from .gemini import GeminiAdapter
+from .grok import GrokAdapter
 from .ollama import OllamaAdapter
 from .opencode import OpenCodeAdapter
 from .qwen import QwenAdapter
@@ -112,6 +113,7 @@ def adapter_registry(
             "codex": CodexAdapter,
             "cursor": CursorAdapter,
             "gemini": GeminiAdapter,
+            "grok": GrokAdapter,
             "opencode": OpenCodeAdapter,
             "qwen": QwenAdapter,
         }
@@ -126,6 +128,7 @@ def adapter_registry(
         "codex": CodexAdapter(),
         "cursor": CursorAdapter(),
         "gemini": GeminiAdapter(),
+        "grok": GrokAdapter(),
         "opencode": OpenCodeAdapter(),
         "qwen": QwenAdapter(),
     }
@@ -156,6 +159,7 @@ __all__ = [
     "CursorAdapter",
     "CommandShimAdapter",
     "GeminiAdapter",
+    "GrokAdapter",
     "OllamaAdapter",
     "OpenCodeAdapter",
     "QwenAdapter",

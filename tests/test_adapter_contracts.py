@@ -7,7 +7,7 @@ import unittest
 
 from unittest.mock import patch
 
-from runtime.adapters import ClaudeAdapter, CodexAdapter, CursorAdapter, GeminiAdapter, OpenCodeAdapter, QwenAdapter
+from runtime.adapters import ClaudeAdapter, CodexAdapter, CursorAdapter, GeminiAdapter, GrokAdapter, OpenCodeAdapter, QwenAdapter
 from runtime.adapters.shim import _sanitize_env
 from runtime.contracts import NormalizeContext, TaskInput
 
@@ -283,6 +283,108 @@ class AdapterContractTests(unittest.TestCase):
                 NormalizeContext(task_id=task.task_id, provider="qwen", repo_root=tmpdir, raw_ref="raw/qwen.stdout.log"),
             )
             self.assertEqual(len(findings), 1)
+
+    def test_grok_adapter_run_poll_normalize(self) -> None:
+        adapter = GrokAdapter()
+        with tempfile.TemporaryDirectory() as tmpdir:
+            task = TaskInput(
+                task_id="task-grok-contract",
+                prompt="ignored in contract test",
+                repo_root=tmpdir,
+                target_paths=["."],
+                metadata={
+                    "artifact_root": tmpdir,
+                    "command_override": [
+                        "python3",
+                        "-c",
+                        'print(\'{"findings":[{"finding_id":"x1","severity":"medium","category":"bug","title":"x","evidence":{"file":"x.py","line":5,"snippet":"v"},"recommendation":"rx","confidence":0.8,"fingerprint":"xfp"}]}\')',
+                    ],
+                },
+            )
+            ref = adapter.run(task)
+            status = self._wait_terminal(adapter, ref)
+            self.assertEqual(status.attempt_state, "SUCCEEDED")
+            with open(f"{tmpdir}/{task.task_id}/raw/grok.stdout.log", "r", encoding="utf-8") as fh:
+                raw = fh.read()
+            findings = adapter.normalize(
+                raw,
+                NormalizeContext(task_id=task.task_id, provider="grok", repo_root=tmpdir, raw_ref="raw/grok.stdout.log"),
+            )
+            self.assertEqual(len(findings), 1)
+            self.assertEqual(findings[0].provider, "grok")
+
+    def test_grok_adapter_builds_verified_command_shape(self) -> None:
+        adapter = GrokAdapter()
+        with tempfile.TemporaryDirectory() as tmpdir:
+            task = TaskInput(
+                task_id="task-grok-command",
+                prompt="review",
+                repo_root=tmpdir,
+                target_paths=["."],
+                metadata={"provider_models": {"grok": "grok-build"}},
+            )
+            cmd = adapter._build_command(task)  # type: ignore[attr-defined]
+        self.assertEqual(cmd[0], "grok")
+        self.assertEqual(cmd[cmd.index("--cwd") + 1], tmpdir)
+        self.assertEqual(cmd[cmd.index("--permission-mode") + 1], "bypassPermissions")
+        self.assertIn("--no-plan", cmd)
+        self.assertIn("--no-memory", cmd)
+        self.assertIn("--no-subagents", cmd)
+        self.assertIn("--disable-web-search", cmd)
+        self.assertEqual(cmd[cmd.index("--model") + 1], "grok-build")
+        self.assertEqual(cmd[-2:], ["-p", "review"])
+        self.assertNotIn("--max-turns", cmd)
+
+    def test_grok_adapter_maps_permissions(self) -> None:
+        adapter = GrokAdapter()
+        with tempfile.TemporaryDirectory() as tmpdir:
+            task = TaskInput(
+                task_id="task-grok-permissions",
+                prompt="review",
+                repo_root=tmpdir,
+                target_paths=["."],
+                metadata={
+                    "provider_permissions": {
+                        "permission_mode": "plan",
+                        "sandbox": "workspace-write",
+                        "always_approve": "true",
+                        "tools": "edit,shell",
+                        "disallowed_tools": "web",
+                        "allow": "src/**",
+                        "deny": "secrets/**",
+                        "no_plan": "false",
+                        "no_memory": "false",
+                        "no_subagents": "false",
+                        "disable_web_search": "false",
+                    },
+                },
+            )
+            cmd = adapter._build_command(task)  # type: ignore[attr-defined]
+        self.assertEqual(cmd[cmd.index("--permission-mode") + 1], "plan")
+        self.assertEqual(cmd[cmd.index("--sandbox") + 1], "workspace-write")
+        self.assertIn("--always-approve", cmd)
+        self.assertEqual(cmd[cmd.index("--tools") + 1], "edit,shell")
+        self.assertEqual(cmd[cmd.index("--disallowed-tools") + 1], "web")
+        self.assertEqual(cmd[cmd.index("--allow") + 1], "src/**")
+        self.assertEqual(cmd[cmd.index("--deny") + 1], "secrets/**")
+        self.assertNotIn("--no-plan", cmd)
+        self.assertNotIn("--no-memory", cmd)
+        self.assertNotIn("--no-subagents", cmd)
+        self.assertNotIn("--disable-web-search", cmd)
+
+    def test_grok_adapter_auth_probe_command(self) -> None:
+        adapter = GrokAdapter()
+        self.assertEqual(adapter._auth_check_command("grok"), ["grok", "models"])  # type: ignore[attr-defined]
+
+    def test_grok_command_record_contract(self) -> None:
+        adapter = GrokAdapter()
+        record = adapter._build_command_for_record()  # type: ignore[attr-defined]
+        self.assertEqual(record[0], "grok")
+        self.assertIn("--cwd", record)
+        self.assertIn("--permission-mode", record)
+        self.assertIn("--output-format", record)
+        self.assertIn("--verbatim", record)
+        self.assertIn("-p", record)
 
     def test_sanitize_env_strips_claudecode(self) -> None:
         with patch.dict("os.environ", {"CLAUDECODE": "1", "HOME": "/tmp"}):

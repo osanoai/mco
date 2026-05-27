@@ -75,6 +75,29 @@
           ]
         }
       ]
+    },
+    "grok": {
+      "cli": "grok",
+      "tiers": [
+        {
+          "tier": "fast",
+          "models": [
+            "grok-build"
+          ]
+        },
+        {
+          "tier": "balanced",
+          "models": [
+            "grok-build"
+          ]
+        },
+        {
+          "tier": "powerful",
+          "models": [
+            "grok-build"
+          ]
+        }
+      ]
     }
   }
 }

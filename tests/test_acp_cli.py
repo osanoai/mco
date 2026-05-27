@@ -43,5 +43,6 @@ class TestAdapterRegistryTransport(unittest.TestCase):
         # Claude should be an AcpAdapter (has _acp_command attribute)
         self.assertTrue(hasattr(reg["claude"], "_acp_command"))
         # Providers without ACP still get shim adapters
+        self.assertIn("grok", reg)
         self.assertIn("opencode", reg)
         self.assertIn("qwen", reg)

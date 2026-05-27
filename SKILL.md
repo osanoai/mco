@@ -1,7 +1,7 @@
 ---
 name: mco-cli
 description: |
-  REQUIRED when user mentions gemini, codex, claude, cursor, opencode, or qwen as the agent/provider to perform a task. Route "ask gemini", "use codex", "run with claude", "have cursor do X", "have opencode do X", and similar requests through the mco CLI.
+  REQUIRED when user mentions opencode, qwen, claude, gemini, codex, cursor-agent, cursor, or grok as the agent/provider to perform a task. Route "ask gemini", "use codex", "run with claude", "have cursor-agent do X", "have opencode do X", "ask grok", and similar requests through the mco CLI.
   TRIGGER when: user names an AI coding provider as the performer of a task; user wants multi-provider code review; user wants a multi-agent run; user says "ask", "use", "run with", or "review with" plus a provider name.
   SKIP when: user is asking about a provider API/SDK rather than asking that provider to perform work; user explicitly asks to run a local provider binary directly without mco.
 ---
@@ -10,7 +10,7 @@ description: |
 
 Use the `mco` command from `PATH` to run AI coding providers. Do not call provider binaries directly.
 
-Supported providers: `claude`, `codex`, `cursor`, `gemini`, `opencode`, `qwen`.
+Supported providers: `opencode`, `qwen`, `claude`, `gemini`, `codex`, `cursor-agent` (via provider id `cursor`), and `grok`.
 
 ## Basic Rules
 
@@ -29,15 +29,17 @@ Examples:
 - "ask Gemini" -> `--providers gemini`
 - "use Claude and Codex" -> `--providers claude,codex`
 - "have Cursor do this" -> `--providers cursor`
+- "have cursor-agent do this" -> `--providers cursor`
 - "have Opencode review this" -> `--providers opencode`
+- "ask Grok" -> `--providers grok`
 
 If the user asks for "all providers", use:
 
 ```bash
---providers claude,codex,cursor,gemini,opencode,qwen
+--providers opencode,qwen,claude,gemini,codex,cursor,grok
 ```
 
-If the user names an unsupported provider, stop and say that `mco` supports only `claude`, `codex`, `cursor`, `gemini`, `opencode`, and `qwen`.
+If the user names an unsupported provider, stop and say that `mco` supports only `opencode`, `qwen`, `claude`, `gemini`, `codex`, `cursor-agent` (as `cursor`), and `grok`.
 
 ## Command Templates
 
@@ -68,7 +70,7 @@ PROMPT
 
 Replace:
 - `REPO_PATH` with the absolute path to the target repository, or `.` if the current directory is the target repository.
-- `PROVIDERS` with a comma-separated provider list, such as `gemini`, `cursor`, or `claude,codex`.
+- `PROVIDERS` with a comma-separated provider list, such as `gemini`, `cursor`, `grok`, or `claude,codex`.
 - `TASK_PROMPT` with the user's exact task plus any necessary local path context.
 
 The closing `PROMPT` line must start at column 1 with no spaces before it.
