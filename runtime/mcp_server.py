@@ -10,6 +10,8 @@ import os
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
+from .provider_identity import canonical_provider_list
+
 
 # ── Envelope helpers ──
 
@@ -52,7 +54,7 @@ def _sync_doctor(providers_csv: Optional[str]) -> Dict[str, Any]:
     from .cli import _doctor_provider_presence, SUPPORTED_PROVIDERS
 
     if providers_csv:
-        providers = [p.strip() for p in providers_csv.split(",") if p.strip()]
+        providers = canonical_provider_list(p.strip() for p in providers_csv.split(",") if p.strip())
         valid = [p for p in providers if p in SUPPORTED_PROVIDERS]
         if not valid:
             return _err("invalid_providers", "No valid providers in: {}".format(providers_csv))
@@ -99,7 +101,7 @@ def _sync_review(
         return err
     repo_path = Path(repo).resolve()
 
-    provider_list = [p.strip() for p in providers.split(",") if p.strip()]
+    provider_list = canonical_provider_list(p.strip() for p in providers.split(",") if p.strip())
     valid_providers = [p for p in provider_list if p in SUPPORTED_PROVIDERS]
     if not valid_providers:
         return _err("invalid_providers", "No valid providers in: {}".format(providers))
@@ -150,7 +152,7 @@ def _sync_run(
         return err
     repo_path = Path(repo).resolve()
 
-    provider_list = [p.strip() for p in providers.split(",") if p.strip()]
+    provider_list = canonical_provider_list(p.strip() for p in providers.split(",") if p.strip())
     valid_providers = [p for p in provider_list if p in SUPPORTED_PROVIDERS]
     if not valid_providers:
         return _err("invalid_providers", "No valid providers in: {}".format(providers))
@@ -275,7 +277,7 @@ async def run_server() -> None:
         Args:
             repo: Path to repository root.
             prompt: Review instructions.
-            providers: Comma-separated provider list (e.g. "claude,codex,gemini").
+            providers: Comma-separated provider list (e.g. "claude,codex,antigravity"; legacy alias "gemini" is accepted).
             target_paths: Comma-separated scope paths (default: ".").
             diff_mode: "branch", "staged", or "unstaged" (default: disabled).
             diff_base: Git ref for branch diff (implies diff_mode="branch").

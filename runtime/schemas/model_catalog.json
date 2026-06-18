@@ -25,8 +25,8 @@
         }
       ]
     },
-    "gemini": {
-      "cli": "gemini",
+    "antigravity": {
+      "cli": "agy",
       "tiers": [
         {
           "tier": "fast",

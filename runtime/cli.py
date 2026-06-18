@@ -18,9 +18,10 @@ from .formatters import (
     format_sarif,
 )
 from .model_catalog import load_catalog, list_models_for_provider, list_providers, parse_provider_models, resolve_model
+from .provider_identity import canonical_provider_id, canonical_provider_list, canonical_provider_map
 from .review_engine import ReviewRequest, run_review
 
-SUPPORTED_PROVIDERS = ("claude", "codex", "cursor", "gemini", "grok", "opencode", "qwen")
+SUPPORTED_PROVIDERS = ("antigravity", "claude", "codex", "cursor", "grok", "opencode", "qwen")
 DEFAULT_CONFIG = ReviewConfig()
 DEFAULT_POLICY = DEFAULT_CONFIG.policy
 
@@ -528,15 +529,7 @@ def _render_user_readable_report(
 
 
 def _parse_providers(raw: str) -> List[str]:
-    seen = set()
-    providers: List[str] = []
-    for item in raw.split(","):
-        value = item.strip()
-        if not value or value in seen:
-            continue
-        seen.add(value)
-        providers.append(value)
-    return providers
+    return canonical_provider_list(item.strip() for item in raw.split(",") if item.strip())
 
 
 def _parse_provider_timeouts(raw: str) -> Dict[str, int]:
@@ -559,7 +552,7 @@ def _parse_provider_timeouts(raw: str) -> Dict[str, int]:
             raise ValueError(f"invalid timeout value for provider '{provider_name}': {timeout_text.strip()}") from None
         if timeout <= 0:
             raise ValueError(f"timeout must be > 0 for provider '{provider_name}'")
-        result[provider_name] = timeout
+        result[canonical_provider_id(provider_name)] = timeout
     return result
 
 
@@ -591,7 +584,7 @@ def _parse_provider_permissions_json(raw: str) -> Dict[str, Dict[str, str]]:
             if not key_name:
                 raise ValueError(f"provider '{provider_name}' contains empty permission key")
             normalized[key_name] = str(value)
-        result[provider_name] = normalized
+        result[canonical_provider_id(provider_name)] = normalized
     return result
 
 
@@ -620,7 +613,7 @@ def _add_common_execution_args(parser: argparse.ArgumentParser) -> None:
     scope.add_argument(
         "--providers",
         default=argparse.SUPPRESS,
-        help="Comma-separated providers (default from config or: claude,codex,cursor,gemini,grok,opencode,qwen)",
+        help="Comma-separated providers (default from config or: antigravity,claude,codex,cursor,grok,opencode,qwen; legacy gemini is accepted)",
     )
     scope.add_argument("--target-paths", default=".", help="Comma-separated task scope paths")
     scope.add_argument("--task-id", default="", help="Optional stable task id")
@@ -821,7 +814,7 @@ def build_parser() -> argparse.ArgumentParser:
     doctor.add_argument(
         "--providers",
         default=",".join(DEFAULT_CONFIG.providers),
-        help="Comma-separated providers. Supported: claude,codex,cursor,gemini,grok,opencode,qwen",
+        help="Comma-separated providers. Supported: antigravity,claude,codex,cursor,grok,opencode,qwen (legacy alias: gemini)",
     )
     doctor.add_argument("--json", action="store_true", help="Print machine-readable JSON output")
 
@@ -958,7 +951,7 @@ def build_parser() -> argparse.ArgumentParser:
     models_cmd.add_argument(
         "--provider",
         default="",
-        help="Show models for a single provider (e.g. claude, codex, gemini)",
+        help="Show models for a single provider (e.g. antigravity, claude, codex; legacy alias: gemini)",
     )
     models_cmd.add_argument(
         "--refresh",
@@ -989,7 +982,7 @@ def build_parser() -> argparse.ArgumentParser:
     session_sub = session_cmd.add_subparsers(dest="session_action", required=True)
 
     sess_start = session_sub.add_parser("start", help="Start a new session", formatter_class=_HelpFormatter)
-    sess_start.add_argument("--provider", required=True, help="Agent provider (e.g. claude, codex, gemini)")
+    sess_start.add_argument("--provider", required=True, help="Agent provider (e.g. antigravity, claude, codex; legacy alias: gemini)")
     sess_start.add_argument("--name", default="", help="Session name (auto-generated if omitted)")
     sess_start.add_argument("--repo", default=".", help="Repository root path")
 
@@ -1057,10 +1050,10 @@ def _resolve_config(args: argparse.Namespace, file_config: Optional[Dict] = None
     # artifact_base: CLI > config file > hardcoded default
     artifact_base = args.artifact_base if args.artifact_base != cfg.artifact_base else fc.get("artifact_base", cfg.artifact_base)
 
-    provider_timeouts = dict(cfg.policy.provider_timeouts)
+    provider_timeouts = canonical_provider_map(cfg.policy.provider_timeouts)
     # Merge config file provider_timeouts first, then CLI overrides on top
     if fc_policy.get("provider_timeouts"):
-        provider_timeouts.update(fc_policy["provider_timeouts"])
+        provider_timeouts.update(canonical_provider_map(fc_policy["provider_timeouts"]))
     configured_agents = fc.get("agents", []) if isinstance(fc.get("agents"), list) else []
     for agent in configured_agents:
         if not isinstance(agent, dict):
@@ -1080,9 +1073,9 @@ def _resolve_config(args: argparse.Namespace, file_config: Optional[Dict] = None
         allow_paths = list(cfg.policy.allow_paths)
 
     # provider_permissions: merge config file base, then CLI JSON on top
-    base_permissions = dict(cfg.policy.provider_permissions)
+    base_permissions = canonical_provider_map(cfg.policy.provider_permissions)
     if fc_policy.get("provider_permissions") and isinstance(fc_policy["provider_permissions"], dict):
-        for k, v in fc_policy["provider_permissions"].items():
+        for k, v in canonical_provider_map(fc_policy["provider_permissions"]).items():
             base_permissions[k] = dict(base_permissions.get(k, {}), **v) if isinstance(v, dict) else v
     provider_permissions = _merge_provider_permissions(
         base_permissions,
@@ -1122,9 +1115,10 @@ def _resolve_config(args: argparse.Namespace, file_config: Optional[Dict] = None
                 raise ValueError(
                     "--perspectives-json values must be strings, got {} for key '{}'".format(type(v).__name__, k)
                 )
-        perspectives = {str(k): str(v) for k, v in parsed.items()}
+        perspectives = canonical_provider_map({str(k): str(v) for k, v in parsed.items()})
     if not perspectives:
-        perspectives = fc_policy.get("perspectives", {})
+        raw_perspectives = fc_policy.get("perspectives", {})
+        perspectives = canonical_provider_map(raw_perspectives) if isinstance(raw_perspectives, dict) else {}
 
     divide = str(getattr(args, "divide", "") or fc_policy.get("divide", "") or "").strip()
     if divide and divide not in ("files", "dimensions"):
@@ -1255,7 +1249,7 @@ def _handle_session(args: argparse.Namespace) -> int:
     repo_root = str(Path(args.repo).resolve())
 
     if args.session_action == "start":
-        provider = args.provider.strip()
+        provider = canonical_provider_id(args.provider.strip())
         if provider not in SUPPORTED_PROVIDERS:
             print("Unsupported provider: {}. Supported: {}".format(
                 provider, ", ".join(SUPPORTED_PROVIDERS)), file=sys.stderr)
@@ -1431,7 +1425,7 @@ def _handle_session(args: argparse.Namespace) -> int:
 
     if args.session_action == "ensure":
         try:
-            state = ensure_session(args.provider, repo_root=repo_root, name=args.name)
+            state = ensure_session(canonical_provider_id(args.provider), repo_root=repo_root, name=args.name)
             print("Session '{}' ready (provider={}, pid={})".format(
                 state.name, state.provider, state.pid))
         except ValueError as exc:
@@ -1474,7 +1468,7 @@ def _handle_models(args: argparse.Namespace) -> int:
         print(str(exc), file=sys.stderr)
         return 2
 
-    provider_filter = getattr(args, "provider", "") or ""
+    provider_filter = canonical_provider_id(getattr(args, "provider", "") or "")
     use_json = getattr(args, "json", False)
 
     providers = list_providers(catalog=catalog)
@@ -1711,7 +1705,7 @@ def main(argv: List[str] | None = None) -> int:
 
     if not providers:
         return _stream_error_exit("invalid_providers", "No valid providers selected.")
-    synth_provider = args.synth_provider.strip() if isinstance(args.synth_provider, str) else ""
+    synth_provider = canonical_provider_id(args.synth_provider.strip()) if isinstance(args.synth_provider, str) else ""
     synthesize = bool(args.synthesize or synth_provider)
     if synth_provider and synth_provider not in providers:
         return _stream_error_exit("invalid_config", "--synth-provider must be one of selected providers")
@@ -1750,7 +1744,7 @@ def main(argv: List[str] | None = None) -> int:
             return _stream_error_exit("invalid_config", str(exc))
         # Resolve tier names to concrete model IDs using the catalog
         resolved: Dict[str, str] = {}
-        for prov_name, model_or_tier in provider_models_dict.items():
+        for prov_name, model_or_tier in canonical_provider_map(provider_models_dict).items():
             try:
                 resolved_model = resolve_model(prov_name, model_or_tier)
             except FileNotFoundError:

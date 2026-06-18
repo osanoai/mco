@@ -200,11 +200,11 @@ class AdapterContractTests(unittest.TestCase):
             adapter.cancel(ref)
             self.assertNotIn(ref.run_id, adapter._runs)  # type: ignore[attr-defined]
 
-    def test_gemini_adapter_run_poll_normalize(self) -> None:
+    def test_antigravity_adapter_run_poll_normalize(self) -> None:
         adapter = GeminiAdapter()
         with tempfile.TemporaryDirectory() as tmpdir:
             task = TaskInput(
-                task_id="task-gemini-contract",
+                task_id="task-antigravity-contract",
                 prompt="ignored in contract test",
                 repo_root=tmpdir,
                 target_paths=["."],
@@ -220,13 +220,14 @@ class AdapterContractTests(unittest.TestCase):
             ref = adapter.run(task)
             status = self._wait_terminal(adapter, ref)
             self.assertEqual(status.attempt_state, "SUCCEEDED")
-            with open(f"{tmpdir}/{task.task_id}/raw/gemini.stdout.log", "r", encoding="utf-8") as fh:
+            with open(f"{tmpdir}/{task.task_id}/raw/antigravity.stdout.log", "r", encoding="utf-8") as fh:
                 raw = fh.read()
             findings = adapter.normalize(
                 raw,
-                NormalizeContext(task_id=task.task_id, provider="gemini", repo_root=tmpdir, raw_ref="raw/gemini.stdout.log"),
+                NormalizeContext(task_id=task.task_id, provider="antigravity", repo_root=tmpdir, raw_ref="raw/antigravity.stdout.log"),
             )
             self.assertEqual(len(findings), 1)
+            self.assertEqual(findings[0].provider, "antigravity")
 
     def test_opencode_adapter_run_poll_normalize(self) -> None:
         adapter = OpenCodeAdapter()

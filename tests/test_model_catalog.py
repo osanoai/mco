@@ -249,14 +249,16 @@ class TestAdapterModelInjection:
     def test_gemini_with_model(self):
         adapter = GeminiAdapter()
         cmd = adapter._build_command(self._task({"gemini": "gemini-2.5-pro"}))
-        assert "-m" in cmd
-        idx = cmd.index("-m")
+        assert cmd[0] == "agy"
+        assert "--model" in cmd
+        idx = cmd.index("--model")
         assert cmd[idx + 1] == "gemini-2.5-pro"
+        assert "--dangerously-skip-permissions" in cmd
 
     def test_gemini_without_model(self):
         adapter = GeminiAdapter()
         cmd = adapter._build_command(self._task())
-        assert "-m" not in cmd
+        assert "--model" not in cmd
 
     # ── Grok ──
 

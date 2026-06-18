@@ -6,12 +6,12 @@
 
 <p align="center"><strong>MCO — Orchestrate AI Coding Agents. Any Prompt. Any Agent. Any IDE.</strong></p>
 
-<p align="center"><strong>MCO equips your primary agent with an agent team: dispatch Claude, Codex, Cursor, Gemini, Grok, OpenCode, and Qwen in parallel to execute tasks, review outputs, and synthesize consensus.</strong></p>
+<p align="center"><strong>MCO equips your primary agent with an agent team: dispatch Claude, Codex, Cursor, Antigravity, Grok, OpenCode, and Qwen in parallel to execute tasks, review outputs, and synthesize consensus.</strong></p>
 
 <table align="center">
   <tr>
     <td align="center"><a href="https://github.com/anthropics/claude-code"><img src="https://github.com/anthropics.png?size=96" alt="Claude Code" width="48" /></a></td>
-    <td align="center"><a href="https://github.com/google-gemini/gemini-cli"><img src="https://github.com/google-gemini.png?size=96" alt="Gemini CLI" width="48" /></a></td>
+    <td align="center"><a href="https://github.com/google-antigravity/antigravity-cli"><img src="https://github.com/google-antigravity.png?size=96" alt="Antigravity CLI" width="48" /></a></td>
     <td align="center"><a href="https://github.com/openai/codex"><img src="https://github.com/openai.png?size=96" alt="Codex CLI" width="48" /></a></td>
     <td align="center"><a href="https://www.cursor.com"><strong>Cursor</strong></a></td>
     <td align="center"><a href="https://x.ai"><strong>Grok</strong></a></td>
@@ -20,7 +20,7 @@
   </tr>
   <tr>
     <td align="center"><strong>Claude Code</strong></td>
-    <td align="center"><strong>Gemini CLI</strong></td>
+    <td align="center"><strong>Antigravity CLI</strong></td>
     <td align="center"><strong>Codex CLI</strong></td>
     <td align="center"><strong>Cursor CLI</strong></td>
     <td align="center"><strong>Grok CLI</strong></td>
@@ -29,7 +29,7 @@
   </tr>
   <tr>
     <td align="center"><code>claude</code></td>
-    <td align="center"><code>gemini</code></td>
+    <td align="center"><code>agy</code></td>
     <td align="center"><code>codex</code></td>
     <td align="center"><code>cursor-agent</code></td>
     <td align="center"><code>grok</code></td>
@@ -48,9 +48,9 @@
 
 Running [OpenClaw](https://github.com/open-claw/open-claw) on your machine? It can use MCO as its multi-agent backbone. Just tell OpenClaw what you need:
 
-> "Use mco to run a security review on this repo with Claude, Codex, and Gemini. Synthesize the results."
+> "Use mco to run a security review on this repo with Claude, Codex, and Antigravity. Synthesize the results."
 
-OpenClaw reads `mco -h`, learns the CLI, and orchestrates the entire workflow autonomously. Your local machine becomes a multi-agent review team — OpenClaw is the manager, MCO is the dispatcher, and Claude/Codex/Cursor/Gemini/Grok/OpenCode/Qwen are the team members.
+OpenClaw reads `mco -h`, learns the CLI, and orchestrates the entire workflow autonomously. Your local machine becomes a multi-agent review team — OpenClaw is the manager, MCO is the dispatcher, and Claude/Codex/Cursor/Antigravity/Grok/OpenCode/Qwen are the team members.
 
 This works the same way from **Claude Code, Cursor, Trae, Copilot, Windsurf**, or any agent that can run shell commands.
 
@@ -60,9 +60,9 @@ This works the same way from **Claude Code, Cursor, Trae, Copilot, Windsurf**, o
 
 MCO (Multi-CLI Orchestrator) is a neutral orchestration layer for AI coding agents. It dispatches prompts to multiple agent CLIs in parallel, aggregates results, and returns structured output — JSON, SARIF, or PR-ready Markdown. No vendor lock-in. No workflow rewrite.
 
-With the rise of agentic coding — led by projects like [OpenClaw](https://github.com/open-claw/open-claw) and the broad availability of Claude Code, Codex CLI, Gemini CLI, and more — every developer now has access to powerful AI agents. MCO takes the next step: instead of relying on a single agent, you orchestrate a team.
+With the rise of agentic coding — led by projects like [OpenClaw](https://github.com/open-claw/open-claw) and the broad availability of Claude Code, Codex CLI, Antigravity CLI, and more — every developer now has access to powerful AI agents. MCO takes the next step: instead of relying on a single agent, you orchestrate a team.
 
-MCO is designed to be called by any orchestrating agent or AI-powered IDE — Claude Code, Cursor, Trae, Copilot, Windsurf, or **OpenClaw**. The calling agent organizes context, assigns tasks, and uses MCO to fan out work across multiple agents simultaneously. For example, OpenClaw running on your machine can call `mco review` to dispatch code reviews to Claude, Codex, and Gemini in parallel — turning your local setup into a multi-agent review team with a single command. Agents can also orchestrate each other: Claude Code can dispatch tasks to Codex and Gemini via MCO, and vice versa.
+MCO is designed to be called by any orchestrating agent or AI-powered IDE — Claude Code, Cursor, Trae, Copilot, Windsurf, or **OpenClaw**. The calling agent organizes context, assigns tasks, and uses MCO to fan out work across multiple agents simultaneously. For example, OpenClaw running on your machine can call `mco review` to dispatch code reviews to Claude, Codex, and Antigravity in parallel — turning your local setup into a multi-agent review team with a single command. Agents can also orchestrate each other: Claude Code can dispatch tasks to Codex and Antigravity via MCO, and vice versa.
 
 ## One Agent is a Tool. Five Agents are a Team.
 
@@ -144,7 +144,7 @@ The question isn't "which AI agent is best" — it's "why limit yourself to one?
 | Claude Code | `claude` | Supported |
 | Codex CLI | `codex` | Supported |
 | Cursor CLI | `cursor-agent` | Supported |
-| Gemini CLI | `gemini` | Supported |
+| Antigravity CLI | `antigravity` | Supported |
 | Grok CLI | `grok` | Supported |
 | OpenCode | `opencode` | Supported |
 | Qwen Code | `qwen` | Supported |
@@ -157,10 +157,10 @@ The adapter architecture is extensible — adding a new agent CLI requires imple
 |----------|---------|--------------|
 | PR code review | `mco review --format markdown-pr` | Multiple agents review in parallel, output a PR-ready comment |
 | Security scan in CI | `mco review --format sarif` | Results upload directly to GitHub Code Scanning |
-| Architecture analysis | `mco run --providers claude,gemini,qwen` | Multi-perspective architecture assessment |
+| Architecture analysis | `mco run --providers claude,antigravity,qwen` | Multi-perspective architecture assessment |
 | Pre-deploy health check | `mco doctor --json` | Verify all agents are installed and authenticated |
 | Consensus decision | `mco review --synthesize` | Summarize what agents agree on and where they diverge |
-| Debate findings | `mco review --debate --providers claude,codex,gemini` | Run an extra challenge round before final ranking |
+| Debate findings | `mco review --debate --providers claude,codex,antigravity` | Run an extra challenge round before final ranking |
 | File division review | `mco review --divide files` | Split changed files across providers, balanced by file size |
 | Dimension division review | `mco review --divide dimensions` | Give each provider a dedicated review dimension |
 | Persistent code review | `mco review --memory` | Findings accumulate across runs; agents learn what's already been flagged |
@@ -194,7 +194,7 @@ Debate example:
 mco review \
   --repo . \
   --prompt "Review this PR and challenge weak findings before final ranking." \
-  --providers claude,codex,gemini \
+  --providers claude,codex,antigravity \
   --debate
 ```
 
@@ -204,7 +204,7 @@ Divide example:
 mco review \
   --repo . \
   --prompt "Review this PR for correctness and performance issues." \
-  --providers claude,codex,gemini \
+  --providers claude,codex,antigravity \
   --divide dimensions
 ```
 
@@ -239,7 +239,7 @@ MCO's CLI is fully self-describing. Run `mco -h` or `mco review -h` to see group
 
 In practice, you simply tell your IDE agent what you want:
 
-> "Use mco to dispatch a security review to Claude and Codex, and a performance analysis to Gemini and Qwen — run them in parallel."
+> "Use mco to dispatch a security review to Claude and Codex, and a performance analysis to Antigravity and Qwen — run them in parallel."
 
 The agent reads `mco -h`, understands the flags, composes the commands, and orchestrates the entire workflow on its own. You describe the intent; the agent handles the rest.
 
@@ -253,7 +253,7 @@ Structured code review with findings schema. Each provider returns normalized fi
 mco review \
   --repo . \
   --prompt "Review for security vulnerabilities and performance issues." \
-  --providers claude,codex,cursor,gemini,grok,opencode,qwen \
+  --providers claude,codex,cursor,antigravity,grok,opencode,qwen \
   --json
 ```
 
@@ -357,7 +357,7 @@ Merge order: CLI flags > project config > global config > built-in defaults. Nes
 
 | Flag | Default | Description |
 |------|---------|-------------|
-| `--providers` | `claude,codex,cursor,gemini,grok,opencode,qwen` | Comma-separated provider list |
+| `--providers` | `claude,codex,cursor,antigravity,grok,opencode,qwen` | Comma-separated provider list |
 | `--stall-timeout` | `900` | Cancel when no output progress for this duration (seconds) |
 | `--review-hard-timeout` | `1800` | Hard deadline for review mode; `0` disables |
 | `--max-provider-parallelism` | `0` | `0` = full parallelism across selected providers |
@@ -416,7 +416,7 @@ mco review \
 ```json
 // .mcorc.json
 {
-  "providers": ["claude", "codex", "gemini"],
+  "providers": ["claude", "codex", "antigravity"],
   "transport": "acp",
   "quiet": true,
   "policy": {
@@ -427,7 +427,7 @@ mco review \
     "perspectives": {
       "claude": "Focus on security vulnerabilities and injection attacks",
       "codex": "Focus on performance bottlenecks and resource leaks",
-      "gemini": "Focus on code maintainability and design patterns"
+      "antigravity": "Focus on code maintainability and design patterns"
     }
   }
 }
@@ -473,7 +473,7 @@ How it works:
 - `transport: shim` registers a command-based shim provider
 - `model: ...` registers an Ollama-backed provider automatically
 
-This means local Ollama models can participate in the same `mco review` / `mco run` workflows as Claude, Codex, Cursor, Gemini, Grok, OpenCode, and Qwen.
+This means local Ollama models can participate in the same `mco review` / `mco run` workflows as Claude, Codex, Cursor, Antigravity, Grok, OpenCode, and Qwen.
 
 ## Exit Codes
 
@@ -494,7 +494,7 @@ You (Tech Lead)
      ├─→ Claude Code  ──┐
      ├─→ Codex CLI      │
      ├─→ Cursor CLI     │
-     ├─→ Gemini CLI     ├─→ Consensus Engine → Debate / Synthesize → Output
+     ├─→ Antigravity CLI     ├─→ Consensus Engine → Debate / Synthesize → Output
      ├─→ Grok CLI       │
      ├─→ OpenCode       │
      └─→ Qwen Code   ───┘
@@ -562,7 +562,7 @@ pip install mco[memory]
 mco review \
   --repo . \
   --prompt "Review for security issues." \
-  --providers claude,codex,gemini \
+  --providers claude,codex,antigravity \
   --memory
 ```
 

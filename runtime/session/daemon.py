@@ -24,6 +24,7 @@ from .state import (
     save_state,
     session_dir,
 )
+from ..provider_identity import canonical_provider_id
 
 
 _STALL_TIMEOUT_SECONDS = 900  # Match default provider stall timeout
@@ -175,6 +176,7 @@ def _dispatch_prompt(
     from ..contracts import TaskInput
     from ..retry import RetryPolicy
 
+    provider = canonical_provider_id(provider)
     adapters = _doctor_adapter_registry()
     adapter = adapters.get(provider)
     if adapter is None:

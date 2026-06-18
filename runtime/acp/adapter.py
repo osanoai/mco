@@ -41,7 +41,6 @@ def _now_iso() -> str:
 _ACP_COMMANDS: Dict[str, List[str]] = {
     "claude": ["claude", "code", "--transport", "stdio"],
     "codex": ["codex", "--acp"],
-    "gemini": ["gemini", "--acp"],
 }
 
 

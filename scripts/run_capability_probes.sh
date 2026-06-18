@@ -15,12 +15,12 @@ esac
 
 mkdir -p "$BASE_DIR"
 
-providers=(claude codex gemini opencode qwen)
+providers=(claude codex antigravity opencode qwen)
 DEFAULT_TIMEOUT_SECONDS=45
 PROBE_CWD="${PROBE_CWD:-${HOME:-$ROOT_DIR}}"
 CLAUDE_BIN="$(command -v claude)"
 CODEX_BIN="$(command -v codex)"
-GEMINI_BIN="$(command -v gemini)"
+ANTIGRAVITY_BIN="$(command -v agy)"
 OPENCODE_BIN="$(command -v opencode)"
 QWEN_BIN="$(command -v qwen)"
 
@@ -28,7 +28,7 @@ provider_version() {
   case "$1" in
     claude) "$CLAUDE_BIN" --version | head -n1 | sed 's/ (Claude Code)//' ;;
     codex) "$CODEX_BIN" --version | tail -n1 | awk '{print $2}' ;;
-    gemini) "$GEMINI_BIN" --version 2>&1 | tail -n1 ;;
+    antigravity) "$ANTIGRAVITY_BIN" --version 2>&1 | tail -n1 ;;
     opencode) "$OPENCODE_BIN" --version | head -n1 ;;
     qwen) "$QWEN_BIN" --version | head -n1 ;;
   esac
@@ -174,14 +174,14 @@ done
 # C0 probes
 run_probe "claude" "C0" "'$CLAUDE_BIN' auth status" ""
 run_probe "codex" "C0" "'$CODEX_BIN' login status" ""
-run_probe "gemini" "C0" "'$GEMINI_BIN' -p 'Reply with exactly OK'" "rg -q '(^|[^A-Za-z])OK([^A-Za-z]|$)' '$BASE_DIR/gemini/C0/raw/stdout.log'"
+run_probe "antigravity" "C0" "'$ANTIGRAVITY_BIN' --print-timeout 30s -p 'Reply with exactly OK'" "rg -q '(^|[^A-Za-z])OK([^A-Za-z]|$)' '$BASE_DIR/antigravity/C0/raw/stdout.log'"
 run_probe "opencode" "C0" "'$OPENCODE_BIN' auth list" ""
 run_probe "qwen" "C0" "'$QWEN_BIN' 'Reply with exactly OK' --output-format text" ""
 
 # C1 probes
 run_probe "claude" "C1" "'$CLAUDE_BIN' -p --permission-mode plan --output-format text 'Reply with exactly OK'" ""
 run_probe "codex" "C1" "'$CODEX_BIN' exec --skip-git-repo-check -C '$PROBE_CWD' --sandbox workspace-write 'Reply with exactly OK' || true" "rg -q '(^|[^A-Za-z])OK([^A-Za-z]|$)' '$BASE_DIR/codex/C1/raw/stdout.log'"
-run_probe "gemini" "C1" "'$GEMINI_BIN' -p 'Reply with exactly OK'" "rg -q '(^|[^A-Za-z])OK([^A-Za-z]|$)' '$BASE_DIR/gemini/C1/raw/stdout.log'"
+run_probe "antigravity" "C1" "'$ANTIGRAVITY_BIN' --print-timeout 45s --dangerously-skip-permissions -p 'Reply with exactly OK'" "rg -q '(^|[^A-Za-z])OK([^A-Za-z]|$)' '$BASE_DIR/antigravity/C1/raw/stdout.log'"
 run_probe "opencode" "C1" "'$OPENCODE_BIN' run 'Reply with exactly OK' --format default" "(! rg -q '(^|\\s)Error:' '$BASE_DIR/opencode/C1/raw/stdout.log') && (! rg -q '(^|\\s)Error:' '$BASE_DIR/opencode/C1/raw/stderr.log')"
 run_probe "qwen" "C1" "'$QWEN_BIN' 'Reply with exactly OK' --output-format text" ""
 
@@ -195,9 +195,9 @@ run_probe "codex" "C2" \
   "rm -f '$codex_msg_file'; '$CODEX_BIN' exec --skip-git-repo-check -C '$PROBE_CWD' --sandbox workspace-write --json --output-schema '$schema_file' --output-last-message '$codex_msg_file' 'Return JSON object with probe=c2 and ok=true' || true" \
   "jq -e '[.. | objects | select(has(\"probe\") and has(\"ok\")) | select(.probe==\"c2\" and .ok==true)] | length > 0' '$codex_msg_file'"
 
-run_probe "gemini" "C2" \
-  "'$GEMINI_BIN' -p 'Return JSON object {\"probe\":\"c2\",\"ok\":true}'" \
-  "rg -q '\"probe\"\\s*:\\s*\"c2\"' '$BASE_DIR/gemini/C2/raw/stdout.log' && rg -q '\"ok\"\\s*:\\s*true' '$BASE_DIR/gemini/C2/raw/stdout.log'"
+run_probe "antigravity" "C2" \
+  "'$ANTIGRAVITY_BIN' --print-timeout 45s --dangerously-skip-permissions -p 'Return JSON object {\"probe\":\"c2\",\"ok\":true}'" \
+  "rg -q '\"probe\"\\s*:\\s*\"c2\"' '$BASE_DIR/antigravity/C2/raw/stdout.log' && rg -q '\"ok\"\\s*:\\s*true' '$BASE_DIR/antigravity/C2/raw/stdout.log'"
 
 run_probe "opencode" "C2" \
   "'$OPENCODE_BIN' run 'Return JSON object {\"probe\":\"c2\",\"ok\":true}' --format json" \

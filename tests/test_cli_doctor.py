@@ -15,7 +15,7 @@ class CliDoctorTests(unittest.TestCase):
         parser = build_parser()
         args = parser.parse_args(["doctor"])
         self.assertEqual(args.command, "doctor")
-        self.assertEqual(args.providers, "claude,codex,cursor,gemini,grok,opencode,qwen")
+        self.assertEqual(args.providers, "antigravity,claude,codex,cursor,grok,opencode,qwen")
         self.assertFalse(args.json)
 
     def test_doctor_json_payload_contract(self) -> None:

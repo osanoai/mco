@@ -19,7 +19,8 @@ from runtime.cli import (
 class CliTests(unittest.TestCase):
     def test_parse_providers_deduplicates_preserve_order(self) -> None:
         providers = _parse_providers("codex,claude,codex,gemini,claude")
-        self.assertEqual(providers, ["codex", "claude", "gemini"])
+        self.assertEqual(providers, ["codex", "claude", "antigravity"])
+        self.assertEqual(_parse_providers("gemini,antigravity"), ["antigravity"])
 
     def test_parse_provider_timeouts_ignores_invalid(self) -> None:
         parsed = _parse_provider_timeouts("codex=90,claude=120")
@@ -111,7 +112,7 @@ class CliTests(unittest.TestCase):
                 "--prompt",
                 "x",
                 "--providers",
-                "claude,codex,gemini,qwen,opencode,extra",
+                "claude,codex,antigravity,qwen,opencode,extra",
                 "--divide",
                 "dimensions",
             ]
@@ -119,6 +120,38 @@ class CliTests(unittest.TestCase):
         resolved = _resolve_config(args)
         self.assertEqual(resolved.policy.divide, "dimensions")
         self.assertEqual(resolved.policy.perspectives, {})
+
+    @patch("runtime.cli.run_review")
+    def test_synth_provider_accepts_legacy_gemini_alias(self, mock_run) -> None:
+        from runtime.cli import main
+        from runtime.review_engine import ReviewResult
+
+        mock_run.return_value = ReviewResult(
+            task_id="task-1",
+            artifact_root=None,
+            decision="PASS",
+            terminal_state="COMPLETED",
+            provider_results={"antigravity": {"success": True, "final_text": "ok"}},
+            findings_count=0,
+            parse_success_count=0,
+            parse_failure_count=0,
+            schema_valid_count=0,
+            dropped_findings_count=0,
+        )
+        with contextlib.redirect_stdout(io.StringIO()):
+            exit_code = main([
+                "run",
+                "--prompt",
+                "x",
+                "--providers",
+                "gemini",
+                "--synth-provider",
+                "gemini",
+            ])
+        self.assertEqual(exit_code, 0)
+        req = mock_run.call_args.args[0]
+        self.assertEqual(req.providers, ["antigravity"])
+        self.assertEqual(req.synthesis_provider, "antigravity")
 
     def test_resolve_config_uses_file_config_max_provider_parallelism_when_cli_omits_it(self) -> None:
         parser = build_parser()

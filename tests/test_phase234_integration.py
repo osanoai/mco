@@ -498,7 +498,7 @@ class TestLoadAgentRates(unittest.TestCase):
         ]
 
         rates = _load_agent_rates(client, "coding:test--agents")
-        self.assertEqual(rates, {"claude": 0.75, "gemini": 0.6})
+        self.assertEqual(rates, {"claude": 0.75, "antigravity": 0.6})
 
     def test_returns_empty_on_error(self):
         from runtime.bridge.core import _load_agent_rates

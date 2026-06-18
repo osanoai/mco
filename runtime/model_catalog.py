@@ -21,6 +21,8 @@ from typing import Any, Dict, List, Optional
 from urllib.request import urlopen, Request
 from urllib.error import URLError
 
+from .provider_identity import canonical_provider_id
+
 _CATALOG_URL_ENV = "MCO_MODEL_CATALOG_URL"
 _DEFAULT_GLOBAL_CONFIG_DIR = os.path.join(os.path.expanduser("~"), ".mco")
 _CACHE_FILENAME = "modelCatalog.generated.json"
@@ -165,7 +167,7 @@ def resolve_model(
             # No catalog available: if it looks like a concrete model ID, pass through
             return model_or_tier
 
-    provider_entry = catalog.get("catalogs", {}).get(provider)
+    provider_entry = catalog.get("catalogs", {}).get(canonical_provider_id(provider))
     if provider_entry is None:
         # Provider not in catalog (e.g. opencode, qwen): pass through raw value
         return model_or_tier
@@ -200,7 +202,7 @@ def list_models_for_provider(
         except FileNotFoundError:
             return []
 
-    provider_entry = catalog.get("catalogs", {}).get(provider)
+    provider_entry = catalog.get("catalogs", {}).get(canonical_provider_id(provider))
     if not provider_entry:
         return []
 
@@ -240,7 +242,7 @@ def parse_provider_models(raw: str) -> Dict[str, str]:
                 "Expected format: provider=model (e.g. claude=opus)"
             )
         provider, model_value = pair.split("=", 1)
-        provider_name = provider.strip()
+        provider_name = canonical_provider_id(provider.strip())
         if not provider_name:
             raise ValueError(f"invalid provider-models entry: '{pair}'")
         model_text = model_value.strip()

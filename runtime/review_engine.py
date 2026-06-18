@@ -18,6 +18,7 @@ from .artifacts import expected_paths, task_artifact_root
 from .config import DIVISION_DIMENSIONS, ReviewPolicy
 from .contracts import ConsensusLevel, Evidence, NormalizeContext, NormalizedFinding, ProviderAdapter, ProviderId, TaskInput
 from .orchestrator import OrchestratorRuntime
+from .provider_identity import canonical_provider_id, canonical_provider_list, canonical_provider_map
 from .retry import RetryPolicy
 from .types import AttemptResult, ErrorKind, TaskState
 
@@ -2232,7 +2233,21 @@ def run_review(
     write_artifacts: bool = True,
 ) -> ReviewResult:
     temp_artifact_dir: Optional[tempfile.TemporaryDirectory[str]] = None
-    adapter_map = dict(adapters or _adapter_registry())
+    object.__setattr__(request, "providers", canonical_provider_list(request.providers))
+    object.__setattr__(
+        request,
+        "synthesis_provider",
+        canonical_provider_id(request.synthesis_provider) if request.synthesis_provider else None,
+    )
+    object.__setattr__(
+        request,
+        "provider_models",
+        canonical_provider_map(request.provider_models) if request.provider_models else None,
+    )
+    object.__setattr__(request.policy, "provider_timeouts", canonical_provider_map(request.policy.provider_timeouts))
+    object.__setattr__(request.policy, "provider_permissions", canonical_provider_map(request.policy.provider_permissions))
+    object.__setattr__(request.policy, "perspectives", canonical_provider_map(request.policy.perspectives))
+    adapter_map = canonical_provider_map(dict(adapters or _adapter_registry()))
     task_id = request.task_id or _default_task_id(request.repo_root, request.prompt)
     runtime = OrchestratorRuntime(
         retry_policy=RetryPolicy(max_retries=request.policy.max_retries, base_delay_seconds=1.0, backoff_multiplier=2.0),

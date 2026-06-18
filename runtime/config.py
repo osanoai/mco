@@ -9,6 +9,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
+from .provider_identity import canonical_provider_list, canonical_provider_map
+
 DEFAULT_PROVIDER_TIMEOUTS: Dict[str, int] = {
 }
 DIVISION_DIMENSIONS = (
@@ -43,7 +45,7 @@ class ReviewPolicy:
 
 @dataclass(frozen=True)
 class ReviewConfig:
-    providers: List[str] = field(default_factory=lambda: ["claude", "codex", "cursor", "gemini", "grok", "opencode", "qwen"])
+    providers: List[str] = field(default_factory=lambda: ["antigravity", "claude", "codex", "cursor", "grok", "opencode", "qwen"])
     artifact_base: str = "reports/review"
     policy: ReviewPolicy = field(default_factory=ReviewPolicy)
 
@@ -363,5 +365,13 @@ def load_config_files(
     ]
     if any(os.path.isfile(path) for path in agent_candidate_paths):
         merged["agents"] = load_agent_registrations(repo_root, global_config_dir=global_dir)
+
+    if isinstance(merged.get("providers"), list):
+        merged["providers"] = canonical_provider_list(str(item) for item in merged["providers"])
+    policy = merged.get("policy")
+    if isinstance(policy, dict):
+        for key in ("provider_timeouts", "provider_permissions", "perspectives"):
+            if isinstance(policy.get(key), dict):
+                policy[key] = canonical_provider_map(policy[key])
 
     return merged

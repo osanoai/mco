@@ -7,7 +7,7 @@ from .claude import ClaudeAdapter
 from .codex import CodexAdapter
 from .cursor import CursorAdapter
 from .custom import CommandShimAdapter
-from .gemini import GeminiAdapter
+from .gemini import AntigravityAdapter, GeminiAdapter
 from .grok import GrokAdapter
 from .ollama import OllamaAdapter
 from .opencode import OpenCodeAdapter
@@ -112,7 +112,7 @@ def adapter_registry(
             "claude": ClaudeAdapter,
             "codex": CodexAdapter,
             "cursor": CursorAdapter,
-            "gemini": GeminiAdapter,
+            "antigravity": AntigravityAdapter,
             "grok": GrokAdapter,
             "opencode": OpenCodeAdapter,
             "qwen": QwenAdapter,
@@ -127,7 +127,7 @@ def adapter_registry(
         "claude": ClaudeAdapter(),
         "codex": CodexAdapter(),
         "cursor": CursorAdapter(),
-        "gemini": GeminiAdapter(),
+        "antigravity": AntigravityAdapter(),
         "grok": GrokAdapter(),
         "opencode": OpenCodeAdapter(),
         "qwen": QwenAdapter(),
@@ -154,6 +154,7 @@ def adapter_registry(
 
 
 __all__ = [
+    "AntigravityAdapter",
     "ClaudeAdapter",
     "CodexAdapter",
     "CursorAdapter",

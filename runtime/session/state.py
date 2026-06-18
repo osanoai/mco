@@ -8,6 +8,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
+from ..provider_identity import canonical_provider_id
+
 
 _SESSIONS_ROOT = ".mco/sessions"
 
@@ -33,6 +35,7 @@ class SessionState:
     turn_count: int = 0
 
     def __post_init__(self) -> None:
+        self.provider = canonical_provider_id(self.provider)
         if not self.created_at:
             self.created_at = _now_iso()
         if not self.last_active:

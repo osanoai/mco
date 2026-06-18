@@ -12,6 +12,8 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Tuple
 
+from ..provider_identity import canonicalize_detected_by, canonical_provider_id
+
 
 def _now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
@@ -88,13 +90,14 @@ def update_scores_from_findings(
     now = _now_iso()
 
     for finding in findings:
-        detected_by: List[str] = finding.get("detected_by", [])
+        detected_by: List[str] = canonicalize_detected_by(finding.get("detected_by", []))
         category: str = finding.get("category", task_category)
         status: str = finding.get("status", "open")
 
         is_cross_validated = len(detected_by) > 1
 
         for agent in detected_by:
+            agent = canonical_provider_id(agent)
             key = (agent, category)
 
             if key not in scores:

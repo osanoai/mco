@@ -145,7 +145,7 @@ class TestBridgePostRunPersistence(unittest.TestCase):
         merged = _merge_finding_with_existing(existing, new_raw, commit="abc123")
         self.assertEqual(merged["occurrence_count"], 3)
         self.assertIn("claude", merged["detected_by"])
-        self.assertIn("gemini", merged["detected_by"])
+        self.assertIn("antigravity", merged["detected_by"])
         self.assertEqual(merged["last_seen_commit"], "abc123")
         # first_seen unchanged
         self.assertEqual(merged["first_seen"], "2026-03-01T00:00:00Z")

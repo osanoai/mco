@@ -111,7 +111,7 @@ class TestCategoryAwareAgentRates(unittest.TestCase):
         ])
         rates = _load_agent_rates(client, "coding:test--agents", category="security")
         self.assertAlmostEqual(rates["claude"], 0.9)
-        self.assertAlmostEqual(rates["gemini"], 0.7)
+        self.assertAlmostEqual(rates["antigravity"], 0.7)
         self.assertNotIn("style", str(rates))
 
     def test_average_without_category(self):
