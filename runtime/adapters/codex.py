@@ -53,6 +53,9 @@ class CodexAdapter(ShimAdapterBase):
         output_schema_path = input_task.metadata.get("output_schema_path")
         if isinstance(output_schema_path, str) and output_schema_path.strip():
             cmd.extend(["--output-schema", output_schema_path.strip()])
+        last_message_path = input_task.metadata.get("last_message_path")
+        if isinstance(last_message_path, str) and last_message_path.strip():
+            cmd.extend(["--output-last-message", last_message_path.strip()])
         cmd.append(input_task.prompt)
         return cmd
 
@@ -70,6 +73,8 @@ class CodexAdapter(ShimAdapterBase):
             "--json",
             "--output-schema",
             "<schema-path>",
+            "--output-last-message",
+            "<last-message-path>",
             "<prompt>",
         ]
 

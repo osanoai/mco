@@ -8,7 +8,7 @@ import subprocess
 import tempfile
 import time
 import uuid
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, List, Optional, TextIO
@@ -37,6 +37,7 @@ class ShimRunHandle:
     process: subprocess.Popen[str]
     stdout_path: Path
     stderr_path: Path
+    last_message_path: Path
     provider_result_path: Path
     stdout_file: TextIO
     stderr_file: TextIO
@@ -94,11 +95,6 @@ class ShimAdapterBase:
         return []
 
     def run(self, input_task: TaskInput) -> TaskRunRef:
-        command_override = input_task.metadata.get("command_override")
-        cmd = command_override if isinstance(command_override, list) else self._build_command(input_task)
-        if not isinstance(cmd, list) or not cmd:
-            raise ValueError("adapter run command is empty")
-
         artifact_root = str(input_task.metadata.get(
             "artifact_root", os.path.join(tempfile.gettempdir(), "mco-{}".format(os.getuid())),
         ))
@@ -109,8 +105,19 @@ class ShimAdapterBase:
 
         stdout_path = paths[f"raw/{self.id}.stdout.log"]
         stderr_path = paths[f"raw/{self.id}.stderr.log"]
+        last_message_path = paths["raw_dir"] / f"{self.id}.last_message.txt"
         provider_result_path = paths[f"providers/{self.id}.json"]
         run_id = f"{self.id}-{uuid.uuid4().hex[:12]}"
+
+        command_override = input_task.metadata.get("command_override")
+        if isinstance(command_override, list):
+            cmd = command_override
+        else:
+            command_metadata = dict(input_task.metadata)
+            command_metadata.setdefault("last_message_path", str(last_message_path))
+            cmd = self._build_command(replace(input_task, metadata=command_metadata))
+        if not isinstance(cmd, list) or not cmd:
+            raise ValueError("adapter run command is empty")
 
         stdout_file = stdout_path.open("w", encoding="utf-8")
         stderr_file = stderr_path.open("w", encoding="utf-8")
@@ -132,6 +139,7 @@ class ShimAdapterBase:
             process=process,
             stdout_path=stdout_path,
             stderr_path=stderr_path,
+            last_message_path=last_message_path,
             provider_result_path=provider_result_path,
             stdout_file=stdout_file,
             stderr_file=stderr_file,
@@ -210,6 +218,7 @@ class ShimAdapterBase:
             "warnings": warnings,
             "stdout_path": str(handle.stdout_path),
             "stderr_path": str(handle.stderr_path),
+            "last_message_path": str(handle.last_message_path),
         }
         handle.provider_result_path.write_text(json.dumps(payload, ensure_ascii=True, indent=2), encoding="utf-8")
         self._runs.pop(ref.run_id, None)

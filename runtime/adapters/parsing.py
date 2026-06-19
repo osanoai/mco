@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 import re
 from typing import Any, Dict, List, Optional, Set, Tuple
@@ -9,6 +10,14 @@ from ..contracts import Evidence, NormalizedFinding, NormalizeContext, ProviderI
 ALLOWED_SEVERITY = {"critical", "high", "medium", "low"}
 ALLOWED_CATEGORY = {"bug", "security", "performance", "maintainability", "test-gap"}
 _FINAL_TEXT_CANDIDATE_LIMIT = 500
+_STOP_REASON_KEYS = (
+    "stop_reason",
+    "finish_reason",
+    "termination_reason",
+    "exit_reason",
+    "outcome",
+    "status",
+)
 
 
 def _decode_json_fragments(text: str) -> List[Any]:
@@ -199,6 +208,44 @@ def extract_final_text_from_output(text: str) -> str:
         _collect_final_text_candidates(payload, candidates, seen)
 
     return _select_best_text_candidate(candidates) if candidates else raw
+
+
+def _collect_stop_reason_candidates(payload: Any, candidates: List[Tuple[int, str]]) -> None:
+    if isinstance(payload, dict):
+        payload_type_raw = payload.get("type")
+        payload_type = payload_type_raw.lower() if isinstance(payload_type_raw, str) else ""
+        terminal_score = 2 if any(token in payload_type for token in ("result", "completed", "final", "completion")) else 0
+        if payload_type == "turn.completed":
+            candidates.append((terminal_score + 1, "turn.completed"))
+
+        for key in _STOP_REASON_KEYS:
+            value = payload.get(key)
+            if isinstance(value, (str, int, float, bool)):
+                normalized = str(value).strip()
+                if normalized:
+                    candidates.append((terminal_score + (2 if key in ("stop_reason", "finish_reason") else 0), normalized))
+
+        for value in payload.values():
+            if isinstance(value, (dict, list)):
+                _collect_stop_reason_candidates(value, candidates)
+    elif isinstance(payload, list):
+        for item in payload:
+            if isinstance(item, (dict, list)):
+                _collect_stop_reason_candidates(item, candidates)
+
+
+def extract_stop_reason_from_output(text: str) -> str:
+    """
+    Best-effort terminal reason extraction from provider JSONL/event output.
+    Returns an empty string when no explicit reason is available.
+    """
+    candidates: List[Tuple[int, str]] = []
+    for payload in extract_json_payloads(text):
+        _collect_stop_reason_candidates(payload, candidates)
+    if not candidates:
+        return ""
+    reason = max(enumerate(candidates), key=lambda item: (item[1][0], item[0]))[1][1]
+    return reason
 
 
 def extract_json_payloads(text: str) -> List[Any]:
@@ -468,6 +515,128 @@ def _extract_findings(payload: Any) -> List[Dict[str, Any]]:
     return []
 
 
+_PROSE_SEVERITY_RE = re.compile(r"\b(critical|high|medium|low)\b", flags=re.IGNORECASE)
+_PROSE_LOCATION_RE = re.compile(
+    r"(?P<file>(?:[A-Za-z0-9_.-]+/)*[A-Za-z0-9_.-]+\.[A-Za-z0-9]{1,8})(?::(?P<line>\d+))?"
+)
+_PROSE_BLOCK_START_RE = re.compile(
+    r"^\s*(?:#{1,6}\s*)?(?:[-*]\s*)?(?:\d+[.)]\s*)?(?:\[\s*)?"
+    r"(critical|high|medium|low)(?:\s*\])?\b",
+    flags=re.IGNORECASE,
+)
+_PROSE_FIELD_RE = re.compile(r"^\s*(?:[-*]\s*)?(recommendation|fix|evidence|snippet)\s*:\s*(.+)$", flags=re.IGNORECASE)
+
+
+def _infer_category_from_text(text: str) -> str:
+    lowered = text.lower()
+    if any(token in lowered for token in ("security", "xss", "csrf", "sql injection", "auth", "token", "secret", "credential")):
+        return "security"
+    if any(token in lowered for token in ("performance", "slow", "latency", "n+1", "cache", "quadratic")):
+        return "performance"
+    if any(token in lowered for token in ("test", "coverage", "assertion", "regression")):
+        return "test-gap"
+    if any(token in lowered for token in ("maintainability", "refactor", "duplication", "readability", "dead code")):
+        return "maintainability"
+    return "bug"
+
+
+def _clean_prose_title(line: str, severity: str, location_text: str) -> str:
+    title = re.sub(r"^\s*(?:#{1,6}\s*)?(?:[-*]\s*)?(?:\d+[.)]\s*)?", "", line).strip()
+    title = re.sub(r"^\[?\s*{}\s*\]?\s*[:\-–—]*\s*".format(re.escape(severity)), "", title, flags=re.IGNORECASE)
+    if location_text:
+        title = title.replace(location_text, " ")
+    title = re.sub(r"\s+", " ", title).strip(" -:[]()")
+    if not title:
+        return "Prose review finding"
+    return title[:180]
+
+
+def _collect_prose_blocks(text: str) -> List[str]:
+    blocks: List[List[str]] = []
+    current: List[str] = []
+    for line in text.splitlines():
+        if _PROSE_BLOCK_START_RE.search(line):
+            if current:
+                blocks.append(current)
+            current = [line]
+            continue
+        if current:
+            if not line.strip():
+                blocks.append(current)
+                current = []
+            else:
+                current.append(line)
+    if current:
+        blocks.append(current)
+    if blocks:
+        return ["\n".join(block).strip() for block in blocks if "\n".join(block).strip()]
+
+    # Fallback for one-line prose bullets where severity is not the first token.
+    return [
+        line.strip()
+        for line in text.splitlines()
+        if _PROSE_SEVERITY_RE.search(line) and _PROSE_LOCATION_RE.search(line)
+    ]
+
+
+def extract_prose_findings_from_text(text: str, provider: ProviderId) -> List[Dict[str, Any]]:
+    findings: List[Dict[str, Any]] = []
+    seen: Set[Tuple[str, str, Optional[int], str]] = set()
+    for block in _collect_prose_blocks(text):
+        severity_match = _PROSE_SEVERITY_RE.search(block)
+        location_match = _PROSE_LOCATION_RE.search(block)
+        if not severity_match or not location_match:
+            continue
+
+        severity = severity_match.group(1).lower()
+        file_path = location_match.group("file")
+        line_text = location_match.group("line")
+        line = int(line_text) if line_text else None
+        first_line = block.splitlines()[0].strip()
+        title = _clean_prose_title(first_line, severity, location_match.group(0))
+
+        recommendation = "Review and address this issue."
+        snippet = ""
+        for raw_line in block.splitlines()[1:]:
+            field_match = _PROSE_FIELD_RE.match(raw_line)
+            if not field_match:
+                continue
+            key = field_match.group(1).lower()
+            value = field_match.group(2).strip()
+            if key in ("recommendation", "fix") and value:
+                recommendation = value
+            elif key in ("evidence", "snippet") and value:
+                snippet = value
+        if not snippet:
+            snippet = re.sub(r"\s+", " ", block).strip()[:240]
+
+        dedupe_key = (severity, file_path, line, title)
+        if dedupe_key in seen:
+            continue
+        seen.add(dedupe_key)
+
+        fingerprint_seed = "{}:{}:{}:{}:{}".format(provider, severity, file_path, line, title)
+        fingerprint = hashlib.sha256(fingerprint_seed.encode("utf-8")).hexdigest()[:16]
+        findings.append(
+            {
+                "finding_id": "{}:prose:{}".format(provider, len(findings) + 1),
+                "severity": severity,
+                "category": _infer_category_from_text(block),
+                "title": title,
+                "evidence": {
+                    "file": file_path,
+                    "line": line,
+                    "symbol": None,
+                    "snippet": snippet,
+                },
+                "recommendation": recommendation,
+                "confidence": 0.5,
+                "fingerprint": "prose:{}".format(fingerprint),
+            }
+        )
+    return findings
+
+
 def _as_optional_int(value: Any) -> Optional[int]:
     if value is None:
         return None
@@ -491,6 +660,8 @@ def normalize_findings_from_text(text: str, ctx: NormalizeContext, provider: Pro
         source_items = []
         for payload in extract_json_payloads(text):
             source_items.extend(_extract_findings(payload))
+        if not source_items and not contract_info["has_contract_envelope"]:
+            source_items.extend(extract_prose_findings_from_text(text, provider))
 
     for item in source_items:
         severity = item.get("severity")

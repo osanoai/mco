@@ -13,7 +13,12 @@ from pathlib import Path
 from typing import Any, Dict, List, Mapping, Optional, Set, Tuple
 
 from .adapters import adapter_registry
-from .adapters.parsing import extract_final_text_from_output, extract_token_usage_from_output, inspect_contract_output
+from .adapters.parsing import (
+    extract_final_text_from_output,
+    extract_stop_reason_from_output,
+    extract_token_usage_from_output,
+    inspect_contract_output,
+)
 from .artifacts import expected_paths, task_artifact_root
 from .config import DIVISION_DIMENSIONS, ReviewPolicy
 from .contracts import ConsensusLevel, Evidence, NormalizeContext, NormalizedFinding, ProviderAdapter, ProviderId, TaskInput
@@ -369,6 +374,19 @@ def _write_text(path: Path, content: str) -> None:
 
 def _output_text(stdout_text: str, stderr_text: str) -> str:
     return stdout_text if stdout_text.strip() else stderr_text
+
+
+def _last_message_path(artifact_path: str, provider: str) -> Path:
+    return Path(artifact_path) / "raw" / f"{provider}.last_message.txt"
+
+
+def _select_final_text(output_text: str, last_message_text: str) -> Tuple[str, str]:
+    stripped_last_message = last_message_text.strip()
+    if stripped_last_message:
+        return (stripped_last_message, "last_message_file")
+    extracted = extract_final_text_from_output(output_text)
+    source = "raw_output" if extracted.strip() == output_text.strip() else "event_stream"
+    return (extracted, source)
 
 
 def _response_quality(success: bool, output_text: str, final_text: str) -> Tuple[bool, str]:
@@ -1670,12 +1688,19 @@ def _run_provider(
                     timeout_stdout = _read_text(raw_dir / f"{provider}.stdout.log")
                     timeout_stderr = _read_text(raw_dir / f"{provider}.stderr.log")
                     timeout_output_text = _output_text(timeout_stdout, timeout_stderr)
+                    timeout_last_message_text = _read_text(_last_message_path(run_ref.artifact_path, provider))
+                    timeout_final_text, timeout_final_text_source = _select_final_text(
+                        timeout_output_text,
+                        timeout_last_message_text,
+                    )
                     timeout_payload = {
                         "cancel_reason": cancel_reason,
+                        "stop_reason": cancel_reason,
                         "wall_clock_seconds": round(now - started, 3),
                         "last_progress_at": _timestamp_to_iso(last_progress_at),
                         "output_text": timeout_output_text,
-                        "final_text": extract_final_text_from_output(timeout_output_text),
+                        "final_text": timeout_final_text,
+                        "final_text_source": timeout_final_text_source,
                         "parse_ok": False,
                         "parse_reason": "",
                         "schema_valid_count": 0,
@@ -1706,9 +1731,12 @@ def _run_provider(
                         })
                 fallback_payload = {
                     "cancel_reason": "provider_poll_timeout",
+                    "stop_reason": "provider_poll_timeout",
                     "wall_clock_seconds": round(time.time() - started, 3),
                     "last_progress_at": _timestamp_to_iso(last_progress_at),
                     "output_text": "",
+                    "final_text": "",
+                    "final_text_source": "",
                     "parse_ok": False,
                     "parse_reason": "",
                     "schema_valid_count": 0,
@@ -1727,6 +1755,12 @@ def _run_provider(
             raw_dir = Path(run_ref.artifact_path) / "raw"
             raw_stdout = _read_text(raw_dir / f"{provider}.stdout.log")
             raw_stderr = _read_text(raw_dir / f"{provider}.stderr.log")
+            raw_output_text = _output_text(raw_stdout, raw_stderr)
+            last_message_text = _read_text(_last_message_path(run_ref.artifact_path, provider))
+            final_text, final_text_source = _select_final_text(raw_output_text, last_message_text)
+            stop_reason = extract_stop_reason_from_output(raw_output_text)
+            if not stop_reason:
+                stop_reason = "completed" if status.attempt_state == "SUCCEEDED" else status.message
             findings: List[NormalizedFinding] = []
             parse_ok = False
             parse_reason = "not_applicable"
@@ -1748,6 +1782,9 @@ def _run_provider(
                 parse_reason = str(contract_info.get("parse_reason", ""))
                 schema_valid_count = int(contract_info["schema_valid_count"])
                 dropped_count = int(contract_info["dropped_count"])
+                if not bool(contract_info["has_contract_envelope"]) and findings:
+                    parse_reason = "prose_fallback_no_contract" if request.policy.enforce_findings_contract else "prose_fallback"
+                    parse_ok = not request.policy.enforce_findings_contract
                 if request.policy.enforce_findings_contract:
                     success = status.attempt_state == "SUCCEEDED" and parse_ok
                     if request.policy.require_non_empty_findings and success and len(findings) == 0:
@@ -1758,16 +1795,18 @@ def _run_provider(
                 "status": asdict(status),
                 "run_ref": asdict(run_ref),
                 "cancel_reason": "",
+                "stop_reason": stop_reason,
                 "wall_clock_seconds": round(time.time() - started, 3),
                 "last_progress_at": _timestamp_to_iso(last_progress_at),
-                "output_text": _output_text(raw_stdout, raw_stderr),
+                "output_text": raw_output_text,
+                "final_text": final_text,
+                "final_text_source": final_text_source,
                 "parse_ok": parse_ok,
                 "parse_reason": parse_reason,
                 "schema_valid_count": schema_valid_count,
                 "dropped_count": dropped_count,
                 "findings": [asdict(item) for item in findings],
             }
-            payload["final_text"] = extract_final_text_from_output(str(payload.get("output_text", "")))
             if success:
                 return AttemptResult(success=True, output=payload)
             if status.error_kind:
@@ -1799,10 +1838,12 @@ def _run_provider(
         "attempts": run_result.attempts,
         "final_error": run_result.final_error.value if run_result.final_error else None,
         "cancel_reason": str(output.get("cancel_reason", "")),
+        "stop_reason": str(output.get("stop_reason", "")),
         "wall_clock_seconds": wall_clock_seconds,
         "last_progress_at": str(output.get("last_progress_at", "")),
         "output_text": output_text,
         "final_text": final_text,
+        "final_text_source": str(output.get("final_text_source", "")),
         "response_ok": response_ok,
         "response_reason": response_reason,
         "parse_ok": parse_ok,
@@ -2096,9 +2137,10 @@ def _collect_results(
         success = bool(details.get("success"))
         parse_reason = str(details.get("parse_reason", ""))
         cancel_reason = str(details.get("cancel_reason", ""))
+        stop_reason = str(details.get("stop_reason", ""))
         assigned_scope_summary = _assigned_scope_summary(details.get("assigned_scope"))
         summary.append(
-            f"- {provider}: success={success}, final_error={details.get('final_error')}, parse_reason={parse_reason or '-'}, cancel_reason={cancel_reason or '-'}, assigned_scope={assigned_scope_summary or '-'}"
+            f"- {provider}: success={success}, final_error={details.get('final_error')}, parse_reason={parse_reason or '-'}, stop_reason={stop_reason or '-'}, cancel_reason={cancel_reason or '-'}, assigned_scope={assigned_scope_summary or '-'}"
         )
         output_text = str(details.get("output_text", ""))
         if output_text:

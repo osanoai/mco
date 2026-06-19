@@ -112,6 +112,18 @@ class SequencedFakeAdapter(FakeAdapter):
         return super().run(input_task)
 
 
+class LastMessageFakeAdapter(FakeAdapter):
+    def __init__(self, provider: str, raw_stdout: str, last_message: str) -> None:
+        super().__init__(provider, raw_stdout)
+        self._last_message = last_message
+
+    def run(self, input_task: TaskInput) -> TaskRunRef:
+        ref = super().run(input_task)
+        last_message_path = Path(ref.artifact_path) / "raw" / f"{self.id}.last_message.txt"
+        last_message_path.write_text(self._last_message, encoding="utf-8")
+        return ref
+
+
 class TimedFakeAdapter(FakeAdapter):
     def __init__(self, provider: str, raw_stdout: str, complete_after_seconds: float) -> None:
         super().__init__(provider, raw_stdout)
@@ -536,6 +548,60 @@ class ReviewEngineTests(unittest.TestCase):
             self.assertEqual(result.parse_success_count, 0)
             self.assertEqual(result.parse_failure_count, 1)
 
+    def test_prose_review_fallback_recovers_findings_without_strict_contract(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            adapter = FakeAdapter(
+                "antigravity",
+                (
+                    "High: Dynamic imports miss extension enforcement in runtime/lint.js:42\n"
+                    "Evidence: import('./relative') is unchecked.\n"
+                    "Recommendation: Validate dynamic import specifiers."
+                ),
+            )
+            req = ReviewRequest(
+                repo_root=tmpdir,
+                prompt="review",
+                providers=["antigravity"],  # type: ignore[list-item]
+                artifact_base=f"{tmpdir}/artifacts",
+                policy=ReviewPolicy(
+                    timeout_seconds=3,
+                    max_retries=0,
+                    require_non_empty_findings=True,
+                    enforce_findings_contract=False,
+                ),
+            )
+            result = run_review(req, adapters={"antigravity": adapter})
+            self.assertEqual(result.findings_count, 1)
+            self.assertEqual(result.parse_success_count, 1)
+            self.assertEqual(result.provider_results["antigravity"].get("parse_reason"), "prose_fallback")
+
+    def test_prose_review_fallback_does_not_satisfy_strict_contract(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            adapter = FakeAdapter(
+                "antigravity",
+                "High: Missing auth check in runtime/server.py:10\nRecommendation: Check authentication first.",
+            )
+            req = ReviewRequest(
+                repo_root=tmpdir,
+                prompt="review",
+                providers=["antigravity"],  # type: ignore[list-item]
+                artifact_base=f"{tmpdir}/artifacts",
+                policy=ReviewPolicy(
+                    timeout_seconds=3,
+                    max_retries=0,
+                    require_non_empty_findings=True,
+                    enforce_findings_contract=True,
+                ),
+            )
+            result = run_review(req, adapters={"antigravity": adapter})
+            self.assertEqual(result.findings_count, 1)
+            self.assertEqual(result.parse_success_count, 0)
+            self.assertEqual(result.parse_failure_count, 1)
+            self.assertEqual(
+                result.provider_results["antigravity"].get("parse_reason"),
+                "prose_fallback_no_contract",
+            )
+
     def test_repeat_submission_executes_each_time(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             adapter = FakeAdapter(
@@ -645,6 +711,28 @@ class ReviewEngineTests(unittest.TestCase):
             self.assertEqual(details.get("final_text"), "Final clean answer.")
             self.assertEqual(details.get("response_ok"), True)
             self.assertEqual(details.get("response_reason"), "extracted_final_text")
+
+    def test_run_mode_prefers_codex_last_message_file(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            raw = (
+                '{"type":"thread.started"}\n'
+                '{"type":"assistant","message":{"content":[{"type":"text","text":"I am still checking usage."}]}}\n'
+                '{"type":"result","result":"Short event result","stop_reason":"stop"}'
+            )
+            adapter = LastMessageFakeAdapter("codex", raw, "Final synthesized answer.")
+            req = ReviewRequest(
+                repo_root=tmpdir,
+                prompt="summarize",
+                providers=["codex"],  # type: ignore[list-item]
+                artifact_base=f"{tmpdir}/artifacts",
+                policy=ReviewPolicy(timeout_seconds=3, max_retries=0, require_non_empty_findings=False),
+            )
+            result = run_review(req, adapters={"codex": adapter}, review_mode=False)
+            details = result.provider_results["codex"]
+            self.assertEqual(details.get("output_text"), raw)
+            self.assertEqual(details.get("final_text"), "Final synthesized answer.")
+            self.assertEqual(details.get("final_text_source"), "last_message_file")
+            self.assertEqual(details.get("stop_reason"), "stop")
 
     def test_run_mode_token_usage_is_opt_in(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:

@@ -96,11 +96,14 @@ class AdapterContractTests(unittest.TestCase):
                 metadata={
                     "artifact_root": tmpdir,
                     "output_schema_path": "/tmp/review.schema.json",
+                    "last_message_path": "/tmp/codex.last-message.txt",
                 },
             )
             cmd = adapter._build_command(task)  # type: ignore[attr-defined]
             self.assertIn("--output-schema", cmd)
             self.assertIn("/tmp/review.schema.json", cmd)
+            self.assertIn("--output-last-message", cmd)
+            self.assertIn("/tmp/codex.last-message.txt", cmd)
 
     def test_cursor_adapter_builds_headless_agent_command(self) -> None:
         adapter = CursorAdapter()

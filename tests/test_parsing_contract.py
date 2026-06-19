@@ -4,10 +4,14 @@ import unittest
 
 from runtime.adapters.parsing import (
     _append_text_candidate,
+    extract_prose_findings_from_text,
     extract_final_text_from_output,
+    extract_stop_reason_from_output,
     extract_token_usage_from_output,
     inspect_contract_output,
+    normalize_findings_from_text,
 )
+from runtime.contracts import NormalizeContext
 
 
 class ParsingContractTests(unittest.TestCase):
@@ -75,6 +79,13 @@ class ParsingContractTests(unittest.TestCase):
     def test_extract_token_usage_returns_none_without_json_payload(self) -> None:
         self.assertIsNone(extract_token_usage_from_output("plain text only"))
 
+    def test_extract_stop_reason_from_result_event(self) -> None:
+        text = (
+            '{"type":"assistant","message":{"content":[{"type":"text","text":"working"}]}}\n'
+            '{"type":"result","result":"done","stop_reason":"stop"}'
+        )
+        self.assertEqual(extract_stop_reason_from_output(text), "stop")
+
     def test_contract_json_valid(self) -> None:
         text = '{"findings":[{"finding_id":"f1","severity":"low","category":"maintainability","title":"t","evidence":{"file":"a.py","line":1,"symbol":null,"snippet":"x"},"recommendation":"r","confidence":0.5,"fingerprint":"fp"}]}'
         info = inspect_contract_output(text)
@@ -105,6 +116,33 @@ class ParsingContractTests(unittest.TestCase):
         self.assertFalse(info["parse_ok"])
         self.assertFalse(info["has_contract_envelope"])
         self.assertEqual(info["parse_reason"], "no_contract_envelope")
+
+    def test_prose_fallback_extracts_obvious_review_finding(self) -> None:
+        text = (
+            "High: Dynamic imports miss the extension rule in runtime/lint.js:42\n"
+            "Evidence: import('./relative') is not checked.\n"
+            "Recommendation: Check dynamic import specifiers too."
+        )
+        findings = extract_prose_findings_from_text(text, "codex")
+        self.assertEqual(len(findings), 1)
+        self.assertEqual(findings[0]["severity"], "high")
+        self.assertEqual(findings[0]["category"], "bug")
+        self.assertEqual(findings[0]["evidence"]["file"], "runtime/lint.js")
+        self.assertEqual(findings[0]["evidence"]["line"], 42)
+
+    def test_normalize_uses_prose_fallback_when_no_contract_envelope(self) -> None:
+        text = (
+            "- Medium: Missing regression coverage in tests/test_cli.py:12\n"
+            "  Recommendation: Add a regression test."
+        )
+        findings = normalize_findings_from_text(
+            text,
+            NormalizeContext(task_id="task", provider="antigravity", repo_root=".", raw_ref="raw/antigravity.stdout.log"),
+            "antigravity",
+        )
+        self.assertEqual(len(findings), 1)
+        self.assertEqual(findings[0].provider, "antigravity")
+        self.assertEqual(findings[0].category, "test-gap")
 
     def test_mixed_contract_envelopes_prefers_valid_candidate(self) -> None:
         text = (

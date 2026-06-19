@@ -461,11 +461,12 @@ def _render_user_readable_report(
         success = bool(details.get("success"))
         attempts = details.get("attempts")
         final_error = details.get("final_error")
+        stop_reason = details.get("stop_reason")
         parse_reason = details.get("parse_reason")
         findings_count = details.get("findings_count")
         assigned_scope = details.get("assigned_scope")
         lines.append(
-            f"- {provider}: success={success}, attempts={attempts}, final_error={final_error}, parse_reason={parse_reason}, findings={findings_count}, assigned_scope={assigned_scope}"
+            f"- {provider}: success={success}, attempts={attempts}, final_error={final_error}, stop_reason={stop_reason}, parse_reason={parse_reason}, findings={findings_count}, assigned_scope={assigned_scope}"
         )
         output_text = str(details.get("final_text", "")) or str(details.get("output_text", ""))
         if output_text:
