@@ -35,7 +35,7 @@ class TestScoring(unittest.TestCase):
             existing_scores={},
         )
         claude_score = scores[("claude", "security")]
-        gemini_score = scores[("gemini", "security")]
+        gemini_score = scores[("antigravity", "security")]
 
         self.assertEqual(claude_score.cross_validated_count, 1)
         self.assertEqual(claude_score.finding_eval_count, 1)
@@ -77,7 +77,7 @@ class TestScoring(unittest.TestCase):
             task_category="perf",
             existing_scores={},
         )
-        score = scores[("gemini", "perf")]
+        score = scores[("antigravity", "perf")]
         self.assertEqual(score.unique_passive_confirmed, 1)
         self.assertEqual(score.unique_passive_pending, 0)
         self.assertEqual(score.unique_rejected, 0)

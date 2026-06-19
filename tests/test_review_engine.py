@@ -1239,7 +1239,7 @@ class ReviewEngineTests(unittest.TestCase):
             )
             result = run_review(req, adapters={"gemini": adapter}, review_mode=False)
             self.assertEqual(result.terminal_state, "FAILED")
-            provider_result = result.provider_results["gemini"]
+            provider_result = result.provider_results["antigravity"]
             self.assertEqual(provider_result.get("reason"), "permission_enforcement_failed")
 
     def test_best_effort_drops_unsupported_permission_keys(self) -> None:

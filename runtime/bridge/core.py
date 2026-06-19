@@ -20,6 +20,7 @@ from .evermemos_client import EverMemosClient
 from .finding_hash import compute_finding_hash
 from .prompt_builder import build_injected_prompt
 from .space import infer_space_slug
+from ..provider_identity import canonical_provider_id, canonical_provider_list, canonicalize_detected_by
 
 # Prefix for run-count markers stored in the context space.
 MCO_RUN_MARKER_PREFIX = "[MCO-RUN-MARKER] "
@@ -168,7 +169,7 @@ def _load_agent_rates(
         rates: Dict[str, float] = {}
         for s in all_scores:
             if s.get("task_category") == category:
-                agent = s.get("agent", "")
+                agent = canonical_provider_id(s.get("agent", ""))
                 if agent:
                     rates[agent] = float(s.get("cross_validated_rate", 0.0))
         return rates
@@ -177,7 +178,7 @@ def _load_agent_rates(
         agent_sums: Dict[str, float] = {}
         agent_counts: Dict[str, int] = {}
         for s in all_scores:
-            agent = s.get("agent", "")
+            agent = canonical_provider_id(s.get("agent", ""))
             if not agent:
                 continue
             rate = float(s.get("cross_validated_rate", 0.0))
@@ -205,8 +206,8 @@ def _merge_finding_with_existing(
     merged["last_seen"] = _now_iso()
     merged["last_seen_commit"] = commit
 
-    old_by: List[str] = list(existing.get("detected_by", []))
-    new_by: List[str] = list(new_raw.get("detected_by", []))
+    old_by = canonicalize_detected_by(existing.get("detected_by", []))
+    new_by = canonicalize_detected_by(new_raw.get("detected_by", []))
     merged["detected_by"] = sorted(set(old_by) | set(new_by))
 
     return merged
@@ -293,6 +294,7 @@ def _pre_run_impl(
     stack_scores = _load_agent_rates(client, stack_space)
     global_scores = _load_agent_rates(client, global_space)
 
+    providers = canonical_provider_list(providers)
     ctx.agent_weights = get_agent_weights(repo_scores, stack_scores, global_scores, ctx.run_count)
     ctx.total_agents = len(providers)
 
@@ -396,6 +398,7 @@ def _post_run_impl(
             detected_by = raw_finding.get("detected_by")
             if not isinstance(detected_by, list):
                 detected_by = providers[:1]
+            detected_by = canonicalize_detected_by(detected_by)
             persisted = {
                 "finding_hash": fhash,
                 "category": category,
@@ -415,7 +418,7 @@ def _post_run_impl(
 
         # Compute confidence BEFORE remember()
         persisted["confidence"] = _finding_confidence(
-            detected_by=persisted.get("detected_by", []),
+            detected_by=canonicalize_detected_by(persisted.get("detected_by", [])),
             total_agents=ctx.total_agents if ctx.total_agents > 0 else len(providers),
             agent_weights=ctx.agent_weights,
             occurrence_count=persisted.get("occurrence_count", 1),
@@ -456,6 +459,7 @@ def _post_run_impl(
                 continue
             try:
                 score_dict = EverMemosClient.deserialize_agent_score(content)
+                score_dict["agent"] = canonical_provider_id(score_dict.get("agent", ""))
                 score_obj = AgentScore.from_dict(score_dict)
                 key = (score_obj.agent, score_obj.task_category)
                 existing_agent_scores[key] = score_obj

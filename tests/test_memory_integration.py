@@ -301,7 +301,7 @@ class TestRealBridgePath(unittest.TestCase):
             persisted = EverMemosClient.deserialize_finding(finding_contents[0])
             self.assertEqual(persisted["occurrence_count"], 2)  # merged, not appended
             self.assertIn("claude", persisted["detected_by"])
-            self.assertIn("gemini", persisted["detected_by"])
+            self.assertIn("antigravity", persisted["detected_by"])
             self.assertEqual(persisted["last_seen_commit"], "abc123")
             self.assertEqual(persisted["first_seen"], "2026-03-01T00:00:00Z")  # preserved
             # Verify confidence was computed (not just the raw value)

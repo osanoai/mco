@@ -247,7 +247,7 @@ class DivideRuntimeTests(unittest.TestCase):
             self.assertEqual(result.division_strategy, "dimensions")
             self.assertIn("Focus on security", captured_inputs["claude"].prompt)
             self.assertIn("Focus on performance", captured_inputs["codex"].prompt)
-            self.assertEqual(result.provider_results["gemini"]["assigned_scope"]["dimension"], "maintainability")
+            self.assertEqual(result.provider_results["antigravity"]["assigned_scope"]["dimension"], "maintainability")
 
     def test_dimensions_division_with_single_provider_assigns_single_dimension(self) -> None:
         from runtime.contracts import CapabilitySet, NormalizeContext, ProviderPresence, TaskInput, TaskRunRef, TaskStatus

@@ -184,7 +184,7 @@ class TestChainProviderOrder(unittest.TestCase):
                 return []
 
         with tempfile.TemporaryDirectory() as tmpdir:
-            # gemini first, claude second — intentionally NOT alphabetical
+            # legacy gemini first, claude second — intentionally NOT alphabetical
             req = ReviewRequest(
                 repo_root=tmpdir,
                 prompt="review code",
@@ -195,9 +195,9 @@ class TestChainProviderOrder(unittest.TestCase):
             adapters = {"gemini": _CapturingAdapter("gemini"), "claude": _CapturingAdapter("claude")}
             result = run_review(req, adapters=adapters)
 
-            # Provider results must preserve input order (gemini before claude)
+            # Provider results must preserve canonicalized input order (antigravity before claude)
             keys = list(result.provider_results.keys())
-            self.assertEqual(keys, ["gemini", "claude"])
+            self.assertEqual(keys, ["antigravity", "claude"])
 
             # Both providers should have received the prompt
             self.assertIn("review code", captured_prompts.get("gemini", ""))

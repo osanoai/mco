@@ -300,7 +300,7 @@ class TestTwoCycleFullPipeline(unittest.TestCase):
             self.assertIsNotNone(merged_critical, "Merged critical finding should exist")
             self.assertEqual(merged_critical["occurrence_count"], 2, "Merged finding should have occurrence_count=2")
             self.assertIn("claude", merged_critical["detected_by"])
-            self.assertIn("gemini", merged_critical["detected_by"])
+            self.assertIn("antigravity", merged_critical["detected_by"])
             self.assertEqual(merged_critical["last_seen_commit"], "bbb222")
 
             # Find passive confirm candidate for medium bug
