@@ -1,6 +1,33 @@
 # MCO
 
+_Run one task across many AI coding agents in parallel — then trust the code they agree on._
+
 MCO is a command-line orchestrator for running the same prompt across multiple coding agents. It can fan out work in parallel, collect provider output, normalize review findings, and return human-readable or machine-readable results.
+
+## Why MCO?
+
+**One agent is a single point of failure.** Ask a single coding agent to write or review code and you get one model's judgment — and one model's blind spots. It misses real bugs, flags problems that aren't real, and sounds equally confident either way. With nothing to check it against, you end up re-verifying everything yourself.
+
+**MCO turns a pool of agents into a review panel.** It runs the same task across the leading coding agents — Claude, Codex, Gemini, Cursor, Grok, and more — in parallel, then uses consensus scoring to separate signal from noise:
+
+- A finding **multiple independent models agree on** is one you can trust.
+- A finding **only one model raised** is flagged for a second look, not lost in the pile.
+- Each model's blind spot is covered by another, so fewer real issues slip through.
+
+**The tradeoff is honest.** Running several agents takes a little longer than asking one — but the code holds up, and time you don't spend debugging shipped bugs is time saved. A bit more time up front pays for itself downstream.
+
+**Reach for MCO when correctness matters more than raw speed:** reviewing security-sensitive changes, validating AI-generated code before it merges, or getting a high-confidence second opinion without betting your codebase on a single vendor.
+
+## Two ways to use MCO
+
+MCO works on its own and inside the AI assistant you already use:
+
+- **As a CLI** — run `mco run` or `mco review` directly from your terminal, or wire them into scripts, hooks, and CI. See [Quick Start](#quick-start).
+- **As a skill for your AI assistant** — MCO ships with a [skill](./SKILL.md) that teaches agents like Claude Code *when* and *how* to drive the CLI, so you orchestrate multiple agents from plain English without leaving your normal workflow:
+
+  > "Ask Grok and Codex to review this change for security bugs."
+
+  Your assistant turns that into the right `mco review` command, runs it, and reports each provider's findings back. See [Use as a Skill](#use-as-a-skill) to set it up.
 
 It is intentionally provider-neutral. Built-in adapters cover common local CLIs, and custom agents can be registered through config without changing MCO itself.
 
@@ -71,6 +98,29 @@ List model catalog entries:
 mco models
 mco models --provider antigravity
 ```
+
+## Use as a Skill
+
+MCO ships with a [skill](./SKILL.md) that teaches a skill-aware AI assistant — such as Claude Code — to drive the CLI for you. Once it is installed, naming any supported provider in a request routes the work through `mco` automatically, with no flags to remember.
+
+Install it for Claude Code by linking the skill into your skills directory:
+
+```bash
+mkdir -p ~/.claude/skills/mco-cli
+ln -s "$(pwd)/SKILL.md" ~/.claude/skills/mco-cli/SKILL.md
+```
+
+Copy the file instead of linking if you prefer a static install. For other skill-aware agents, place `SKILL.md` wherever that tool loads skills from.
+
+Then ask in plain language:
+
+- "Ask Antigravity to summarize this repository."
+- "Have Claude and Codex review the staged changes."
+- "Use Grok, Codex, and Qwen to review `src/` for security issues and show me what they agree on."
+
+Behind the scenes the skill keeps the orchestration correct: it always routes through `mco` (never raw provider binaries), chooses `run` vs `review` for the task, normalizes provider aliases (for example, legacy `gemini` to `antigravity`), passes your prompt safely, and keeps each provider's output separate.
+
+Prerequisite: `mco` on your `PATH` — see [Install](#install).
 
 ## Commands
 
